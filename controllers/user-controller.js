@@ -64,14 +64,14 @@ const login = async(req, res, next) => {
         sameSite: 'lax'
     });
 
-    return res.status(201).json({message:"Login Successful", user: existingUser, token});
+    return res.status(200).json({message:"Login Successful", user: existingUser, token});
 };
 
 //verifying the user token and getting the user id
 const verifyToken = (req, res, next) => {
     const cookies = req.headers.cookie;
     const token = cookies.split('=')[1];
-    console.log(token);
+    console.log(token); //need to remove it
     if (!token) {
         res.status(404).json({ message: "No token provided!" });
     }
@@ -85,7 +85,8 @@ const verifyToken = (req, res, next) => {
     next();
 };
 
-const getUser = async(req, res, next) =>{
+
+const getUser = async (req, res, next) => {
     const userId = req.id;
     let user;
     try {
@@ -93,13 +94,16 @@ const getUser = async(req, res, next) =>{
     } catch (err) {
         return new Error(err);
     }
-    if(!user) {
+    if (!user) {
         return res.status(404).json({message: "User not found!"});
     }
-    return res.status(200).json({user});
+    console.log(user)
+    return res.status(200).json({ user });
 };
+
+
 
 exports.signup = signup;
 exports.login = login;
 exports.verifyToken = verifyToken;
-exports.getUser= getUser;
+exports.getUser = getUser;
