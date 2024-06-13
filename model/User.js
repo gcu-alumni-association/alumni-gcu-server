@@ -17,6 +17,10 @@ const userSchema = new Schema({
         type: String,
         required: true,
         minlength: 8
+    },
+    branch: {
+        type: String,
+        required: true
     }
 });
 
