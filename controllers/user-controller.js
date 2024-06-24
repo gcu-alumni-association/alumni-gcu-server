@@ -1,109 +1,158 @@
-// const User = require("../model/User");
-// const bcrypt = require("bcryptjs");
-// const jwt = require("jsonwebtoken");
-// const JWT_SECRET_KEY = "AlumniGCU";      //later we need to add this in the ".env" file as this key needs to be hidden from the user
+const User = require('../model/User');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const generateToken = require('../middleware/generate-token');
+const nodemailer = require('nodemailer');
 
-// const signup = async(req, res, next) => {
-//     const {name, email, password} = req.body;
+
+const register = async (req, res) => {
+    const { name, email, phone } = req.body;
+    try {
+      const user = new User({ name, email, phone });
+      await user.save();
+  
+      console.log('New user registration pending approval:', user);
+  
+      res.status(201).json({ message: 'Registration successful, pending admin approval.' });
+    } catch (error) {
+      res.status(500).json({ error: 'Server error' });
+    }
+  };
+
+  
+  const pendingUsers = async (req, res) => {
+      //console.log('Pending users route accessed');
+      try {
+      const users = await User.find({ isVerified: false });
+      res.json(users);
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+const approve = async (req, res) => {
+    const { email } = req.body;
     
-//     //Email already exists validation
-//     let existingUser;
-//     try {
-//         existingUser = await User.findOne({ email: email });
-//     } catch(err) {
-//         console.log(err);
-//     }
-//     if(existingUser) {
-//         return res.status(400).json({message: "User already exists!"})
-//     }
-
-//     //hashing the password
-//     const hashedPassword = bcrypt.hashSync(password);
-
-//     //sending user details to database
-//     const user = new User({
-//         name,
-//         email,
-//         password: hashedPassword,
-//     });
-//     try {
-//         await user.save();
-//     } catch(err) {
-//         console.log(err);
-//     }
-//     return res.status(201).json({message:user})
-// };
-
-// const login = async(req, res, next) => {
-//     const {email,password} = req.body;
-
-//     let existingUser;
-//     try {
-//         existingUser = await User.findOne({ email: email });
-//     } catch(err) {
-//         return new Error(err);
-//     }
-//     if(!existingUser) {
-//         return res.status(400).json({message: "User not found!"})
-//     }
-    
-//     const isPasswordCorrect = bcrypt.compareSync(password, existingUser.password);
-//     if(!isPasswordCorrect){
-//         return res.status(400).json({message: "Invalid password!"})
-//     }
-//     //creating the jwt token with a given time validity
-//     const token = jwt.sign({id: existingUser._id}, JWT_SECRET_KEY, {
-//         expiresIn: "60s"
-//     });
-
-//     //setting up cookie for security of user
-//     res.cookie(String(existingUser._id), token, {
-//         path: "/",
-//         expires: new Date(Date.now() + 1000 * 60),
-//         httpOnly: true,
-//         sameSite: 'lax'
-//     });
-
-//     return res.status(200).json({message:"Login Successful", user: existingUser, token});
-// };
-
-// //verifying the user token and getting the user id
-// const verifyToken = (req, res, next) => {
-//     const cookies = req.headers.cookie;
-//     const token = cookies.split('=')[1];
-//     console.log(token); //need to remove it
-//     if (!token) {
-//         res.status(404).json({ message: "No token provided!" });
-//     }
-//     jwt.verify(String(token), JWT_SECRET_KEY, (err, user) => {
-//         if (err) {
-//             return res.status(400).json({ message: "Invalid token!" });
-//         }
-//         console.log(user.id);
-//         req.id = user.id;
-//     });
-//     next();
-// };
+    try {
+        // Find the user by email in the database
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Generate a dummy password and hash it
+        const dummyPassword = Math.random().toString(36).slice(-8);
+        const hashedPassword = await bcrypt.hash(dummyPassword, 10);
+        
+        // Update user data in the database (approve user and set dummy password)
+      user.password = hashedPassword;
+      user.isVerified = true; // Assuming you have a field for user verification
+      await user.save();
+      
+      // Send approval email using Nodemailer with Ethereal
+      const transporter = nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          auth: {
+              user: 'mayra.rau74@ethereal.email',
+              pass: 'CssjERRDPCrwvKxt23'
+            }
+        });
+        
+        const mailOptions = {
+            from: 'mayra.rau74@ethereal.email',
+            to: user.email,
+            subject: 'Account Approved',
+            text: `Your account has been approved. Your temporary password is ${dummyPassword}`
+        };
+        
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.log('Error sending email:', error.message);
+                return res.status(500).json({ error: 'Failed to send approval email' });
+            }
+            console.log('Email sent:', info.messageId);
+            console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+            res.json({ message: 'User approved and email sent' });
+        });
+        
+    } catch (error) {
+        console.error('Approval process error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
 
 
-// const getUser = async (req, res, next) => {
-//     const userId = req.id;
-//     let user;
-//     try {
-//         user = await User.findById(userId, "-password");
-//     } catch (err) {
-//         return new Error(err);
-//     }
-//     if (!user) {
-//         return res.status(404).json({message: "User not found!"});
-//     }
-//     console.log(user)
-//     return res.status(200).json({ user });
-// };
+const login = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+      const user = await User.findOne({ email });
+      if (!user || !user.isVerified) return res.status(400).json({ message: 'Invalid credentials' });
+      //use salt
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+  
+      const accessToken = generateToken(user, process.env.JWT_SECRET, '30m');
+      const refreshToken = generateToken(user, process.env.JWT_SECRET, '30d');
+
+      res.cookie('GCUACCTKN', accessToken , {
+        httpOnly: true 
+      });
+      res.cookie('GCUREFRSTKN', refreshToken , {
+        httpOnly: true 
+      });
+      res.json({message: "Login Successful"})
+    } catch (error) {
+      res.status(500).json({ error: 'Server error' });
+    }
+  };
+
+const getUser = async (req, res) =>{
+  try{
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found'})
+      res.json(user);
+    }catch(error){
+      res.status(500).json({ error: 'Server error' });
+      }
+};
 
 
+const reset_password = async (req, res) => {
+    const { email, oldPassword, newPassword } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) return res.status(400).json({ message: 'Invalid current password' });
+        
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+        
+      res.json({ message: 'Password reset successful' });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+};
 
-// exports.signup = signup;
-// exports.login = login;
-// exports.verifyToken = verifyToken;
-// exports.getUser = getUser;
+const checkAuth = (req, res) => {
+    res.json({ isAuthenticated: true, role: req.user.role});
+}
+
+const logout = async (req, res ) => {
+    res.clearCookie('GCUACCTKN');
+    res.json({ message: 'Logged out successfully' });
+};
+
+module.exports = {
+    login,
+    reset_password,
+    logout,
+    approve,
+    pendingUsers,
+    register,
+    checkAuth, getUser
+}
