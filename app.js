@@ -1,14 +1,20 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser')
 const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
+app.use(cookieParser());
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}
+));
 
-mongoose.connect("mongodb+srv://admin:admingcu@cluster0.gto5c5s.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect("mongodb+srv://admin:admingcu@cluster0.gto5c5s.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0");
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
