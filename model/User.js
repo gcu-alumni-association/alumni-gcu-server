@@ -22,6 +22,16 @@ const userSchema = new Schema({
     type: String 
   },
 
+  batch: {
+    type: String,
+    required: true
+  },
+
+  branch: {
+    type: String,
+    required: true
+  },
+
   isVerified: { 
     type: Boolean, 
     default: false 

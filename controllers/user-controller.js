@@ -3,16 +3,20 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const generateToken = require('../middleware/generate-token');
 const nodemailer = require('nodemailer');
+const { validationResult } = require("express-validator"); //For validation
 
 
 const register = async (req, res) => {
-    const { name, email, phone } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+    const { name, email, phone, batch, branch } = req.body;
     try {
-      const user = new User({ name, email, phone });
-      await user.save();
-  
-      console.log('New user registration pending approval:', user);
-  
+      const user = new User({ name, email, phone, batch, branch });
+      await user.save();  
+      console.log('New user registration pending approval:', user); 
       res.status(201).json({ message: 'Registration successful, pending admin approval.' });
     } catch (error) {
       res.status(500).json({ error: 'Server error' });
@@ -32,6 +36,11 @@ const register = async (req, res) => {
 };
 
 const approve = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
     const { email } = req.body;
     
     try {
@@ -47,7 +56,7 @@ const approve = async (req, res) => {
         
         // Update user data in the database (approve user and set dummy password)
       user.password = hashedPassword;
-      user.isVerified = true; // Assuming you have a field for user verification
+      user.isVerified = true;
       await user.save();
       
       // Send approval email using Nodemailer with Ethereal
@@ -85,6 +94,11 @@ const approve = async (req, res) => {
 
 
 const login = async (req, res) => {
+  const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { email, password } = req.body;
     try {
       const user = await User.findOne({ email });
@@ -111,15 +125,22 @@ const login = async (req, res) => {
 const getUser = async (req, res) =>{
   try{
     const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'User not found'})
-      res.json(user);
-    }catch(error){
+    if (!user) {
+      return res.status(404).json({ message: 'User not found'})
+    }
+    res.json(user);
+    } catch(error) {
       res.status(500).json({ error: 'Server error' });
       }
 };
 
 
 const reset_password = async (req, res) => {
+  const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { email, oldPassword, newPassword } = req.body;
     try {
         const user = await User.findOne({ email });
@@ -134,6 +155,7 @@ const reset_password = async (req, res) => {
         
       res.json({ message: 'Password reset successful' });
     } catch (error) {
+        console.error('Password reset error:', error);      
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -144,6 +166,7 @@ const checkAuth = (req, res) => {
 
 const logout = async (req, res ) => {
     res.clearCookie('GCUACCTKN');
+    res.clearCookie('GCUREFRSTKN');
     res.json({ message: 'Logged out successfully' });
 };
 
@@ -154,5 +177,6 @@ module.exports = {
     approve,
     pendingUsers,
     register,
-    checkAuth, getUser
+    checkAuth, 
+    getUser
 }
