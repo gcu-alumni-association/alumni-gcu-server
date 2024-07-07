@@ -23,7 +23,7 @@ app.use(morgan('combined')); //Used for Logging
 
 //Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 5 * 60 * 1000, // 5 minutes
   max: 100, // Limit each IP to 100 requests per `window` 
 });
 app.use(limiter); // Apply the rate limiting middleware to all requests
@@ -38,9 +38,13 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-//Routes
+//User Routes
 const authRoutes = require('./routes/user-routes');
 app.use('/api/auth', authRoutes);
+
+//News Routes
+const newsRoutes = require('./routes/news-routes');
+app.use('/api/news', newsRoutes);
 
 //Error handling middleware
 app.use((err, req, res, next) => {
