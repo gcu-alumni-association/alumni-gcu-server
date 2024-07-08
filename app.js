@@ -46,6 +46,10 @@ app.use('/api/auth', authRoutes);
 const newsRoutes = require('./routes/news-routes');
 app.use('/api/news', newsRoutes);
 
+//Events Routes
+const eventsRoutes = require('./routes/events-routes');
+app.use('/api/events', eventsRoutes);
+
 //Error handling middleware
 app.use((err, req, res, next) => {
   console.log(err.stack);

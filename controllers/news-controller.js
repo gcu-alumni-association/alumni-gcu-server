@@ -1,7 +1,7 @@
 const News = require('../model/News');
 const { validationResult } = require("express-validator"); //For validation
 
-// Route to get all news
+// to get all news
 const getNews = async (req, res) => {
     const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -15,7 +15,7 @@ const getNews = async (req, res) => {
   }
 };
 
-// Route to create news (Admin only)
+// to create news (Admin only)
 const uploadNews = async (req, res) => {
     const errors = validationResult(req);
   if (!errors.isEmpty()) {
