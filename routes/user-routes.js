@@ -2,7 +2,7 @@ const express = require("express");
 const { check } = require("express-validator");
 const router = express.Router();
 const { verifyToken, checkAdmin, refresh_token } = require('../middleware/verify-token');
-const { login, register, reset_password, approve, pendingUsers, logout, checkAuth, getUser } = require("../controllers/user-controller")
+const { login, register, reset_password, approve, pendingUsers, logout, checkAuth, getUser, updateProfile, getVerifiedUsers } = require("../controllers/user-controller")
 
 router.post("/register",[
     check("name", "Name is required").not().isEmpty(),
@@ -30,6 +30,14 @@ router.post("/reset-password", [
 router.post("/approve", [
     check("email").isEmail()
 ] ,verifyToken, checkAdmin, approve);
+
+router.put("/update-profile", [
+    check("biography").optional().isString(),
+    check("currentWorkingPlace").optional().isString(),
+    check("socialLinks").optional().isObject()
+  ], verifyToken, updateProfile);
+
+router.get("/verified-users", verifyToken, getVerifiedUsers)
 
 router.get("/pending-users",verifyToken, checkAdmin, pendingUsers );
 

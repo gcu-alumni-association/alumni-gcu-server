@@ -134,6 +134,34 @@ const getUser = async (req, res) =>{
       }
 };
 
+const updateProfile = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { biography, currentWorkingPlace, socialLinks } = req.body;
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.biography = biography || user.biography;
+    user.currentWorkingPlace = currentWorkingPlace || user.currentWorkingPlace;
+    user.socialLinks = {
+      linkedin: socialLinks.linkedin || user.socialLinks.linkedin,
+      facebook: socialLinks.facebook || user.socialLinks.facebook
+    };
+
+    await user.save();
+    res.json({ message: 'Profile updated successfully', user });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 const reset_password = async (req, res) => {
   const errors = validationResult(req);
@@ -160,6 +188,16 @@ const reset_password = async (req, res) => {
     }
 };
 
+const getVerifiedUsers = async (req, res) => {
+  try {
+    const users = await User.find({ isVerified: true }).select('name biography');
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching verified users:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 const checkAuth = (req, res) => {
     res.json({ isAuthenticated: true, role: req.user.role});
 }
@@ -178,5 +216,7 @@ module.exports = {
     pendingUsers,
     register,
     checkAuth, 
-    getUser
+    getUser,
+    updateProfile,
+    getVerifiedUsers
 }

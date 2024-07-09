@@ -40,6 +40,19 @@ const userSchema = new Schema({
   role: {
     type: String, 
     default: 'user'   
+  },
+
+  biography: {
+    type: String,
+  },
+
+  currentWorkingPlace: {
+    type: String,
+  },
+
+  socialLinks: {
+    linkedin: { type: String },
+    facebook: { type: String }
   }
 
 });
