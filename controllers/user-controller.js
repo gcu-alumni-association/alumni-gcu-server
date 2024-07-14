@@ -208,6 +208,52 @@ const logout = async (req, res ) => {
     res.json({ message: 'Logged out successfully' });
 };
 
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const dummyPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(dummyPassword, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      auth: {
+        user: 'mayra.rau74@ethereal.email',
+        pass: 'CssjERRDPCrwvKxt23'
+      }
+    });
+
+    const mailOptions = {
+      from: 'mayra.rau74@ethereal.email',
+      to: user.email,
+      subject: 'Password Reset',
+      text: `Your new temporary password is: ${dummyPassword}`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log('Error sending email:', error.message);
+        return res.status(500).json({ error: 'Failed to send reset email' });
+      }
+      console.log('Email sent:', info.messageId);
+      console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      res.json({ message: 'Password reset email sent' });
+    });
+  } catch (error) {
+    console.error('Forgot Password process error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 module.exports = {
     login,
     reset_password,
@@ -218,5 +264,6 @@ module.exports = {
     checkAuth, 
     getUser,
     updateProfile,
-    getVerifiedUsers
+    getVerifiedUsers,
+    forgotPassword
 }
