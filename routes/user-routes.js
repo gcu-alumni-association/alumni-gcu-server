@@ -2,7 +2,7 @@ const express = require("express");
 const { check } = require("express-validator");
 const router = express.Router();
 const { verifyToken, checkAdmin, refresh_token } = require('../middleware/verify-token');
-const { login, register, reset_password, approve, pendingUsers, logout, checkAuth, getUser, updateProfile, getVerifiedUsers } = require("../controllers/user-controller")
+const { login, register, reset_password, approve, pendingUsers, logout, checkAuth, getUser, updateProfile, getVerifiedUsers, forgotPassword } = require("../controllers/user-controller")
 
 router.post("/register",[
     check("name", "Name is required").not().isEmpty(),
@@ -45,5 +45,8 @@ router.post("/refresh-token", refresh_token );
 
 router.get("/check-auth", verifyToken, checkAuth);
 
+router.post("/forgot-password", [
+    check("email", "Please include a valid email").isEmail()
+], forgotPassword);
 
 module.exports = router;
