@@ -50,6 +50,10 @@ app.use('/api/news', newsRoutes);
 const eventsRoutes = require('./routes/events-routes');
 app.use('/api/events', eventsRoutes);
 
+//Images Routes
+const imageRoutes = require('./routes/images-routes');
+app.use('/api/images', imageRoutes);
+
 //Error handling middleware
 app.use((err, req, res, next) => {
   console.log(err.stack);
