@@ -15,7 +15,7 @@ const app = express();
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: process.env.CLIENT_URL || 'http://192.168.29.152:3000',
   credentials: true
 }));
 app.use(helmet());
@@ -38,9 +38,13 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-//User Routes
-const authRoutes = require('./routes/user-routes');
+//Auth Routes
+const authRoutes = require('./routes/auth-routes');
 app.use('/api/auth', authRoutes);
+
+//User Routes
+const userRoutes = require('./routes/user-routes');
+app.use('/api/user', userRoutes);
 
 //News Routes
 const newsRoutes = require('./routes/news-routes');

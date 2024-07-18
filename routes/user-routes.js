@@ -1,8 +1,8 @@
 const express = require("express");
 const { check } = require("express-validator");
 const router = express.Router();
-const { verifyToken, checkAdmin, refresh_token } = require('../middleware/verify-token');
-const { login, register, reset_password, approve, pendingUsers, logout, checkAuth, getUser, updateProfile, getVerifiedUsers, forgotPassword } = require("../controllers/user-controller")
+const { verifyToken, checkAdmin } = require('../middleware/verify-token');
+const { register, reset_password, approve, pendingUsers, checkAuth, getUser, updateProfile, getVerifiedUsers, forgotPassword } = require("../controllers/user-controller")
 const { upload, uploadImage } = require('../middleware/upload-images')
 
 router.post("/register",[
@@ -13,14 +13,7 @@ router.post("/register",[
     check('branch').not().isEmpty()
 ], register);
 
-router.post("/login", [
-    check("email", "Please include the registered email").isEmail(),
-    check("password", "Password is required").not().isEmpty()
-] ,login);
-
 router.get("/user", verifyToken , getUser);
-
-router.post("/logout",verifyToken , logout);
 
 router.post("/reset-password", [
     check("email").isEmail(),
@@ -41,8 +34,6 @@ router.put("/update-profile", [
 router.get("/verified-users", verifyToken, getVerifiedUsers)
 
 router.get("/pending-users",verifyToken, checkAdmin, pendingUsers );
-
-router.post("/refresh-token", refresh_token );
 
 router.get("/check-auth", verifyToken, checkAuth);
 

@@ -1,7 +1,5 @@
 const User = require('../model/User');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const generateToken = require('../middleware/generate-token');
 const nodemailer = require('nodemailer');
 const { validationResult } = require("express-validator"); //For validation
 
@@ -93,35 +91,6 @@ const approve = async (req, res) => {
 };
 
 
-const login = async (req, res) => {
-  const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email, password } = req.body;
-    try {
-      const user = await User.findOne({ email });
-      if (!user || !user.isVerified) return res.status(400).json({ message: 'Invalid credentials' });
-      //use salt
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-  
-      const accessToken = generateToken(user, process.env.JWT_SECRET, '30m');
-      const refreshToken = generateToken(user, process.env.JWT_SECRET, '30d');
-
-      res.cookie('GCUACCTKN', accessToken , {
-        httpOnly: true 
-      });
-      res.cookie('GCUREFRSTKN', refreshToken , {
-        httpOnly: true 
-      });
-      res.json({message: "Login Successful"})
-    } catch (error) {
-      res.status(500).json({ error: 'Server error' });
-    }
-  };
-
 const getUser = async (req, res) =>{
   try{
     const user = await User.findById(req.user.id);
@@ -202,11 +171,7 @@ const checkAuth = (req, res) => {
     res.json({ isAuthenticated: true, role: req.user.role});
 }
 
-const logout = async (req, res ) => {
-    res.clearCookie('GCUACCTKN');
-    res.clearCookie('GCUREFRSTKN');
-    res.json({ message: 'Logged out successfully' });
-};
+
 
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -255,9 +220,7 @@ const forgotPassword = async (req, res) => {
 };
 
 module.exports = {
-    login,
     reset_password,
-    logout,
     approve,
     pendingUsers,
     register,
