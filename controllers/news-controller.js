@@ -15,6 +15,24 @@ const getNews = async (req, res) => {
   }
 };
 
+// to get a single news item by ID
+const getSingleNews = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  
+  try {
+    const news = await News.findById(req.params.id);
+    if (!news) {
+      return res.status(404).json({ message: "News item not found" });
+    }
+    res.json(news);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // to create news (Admin only)
 const uploadNews = async (req, res) => {
     const errors = validationResult(req);
@@ -35,4 +53,4 @@ const uploadNews = async (req, res) => {
   }
 };
 
-module.exports = {getNews, uploadNews };
+module.exports = {getNews, uploadNews, getSingleNews };
