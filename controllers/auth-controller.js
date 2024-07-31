@@ -22,18 +22,18 @@ const login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
     
-        const accessToken = generateToken(user, process.env.JWT_SECRET, '30m');
+        const accessToken = generateToken(user, process.env.JWT_SECRET, '30s');
         const refreshToken = generateToken(user, process.env.JWT_REFRESH_SECRET, '30d');
   
         res.cookie('GCURFRSTKN', refreshToken , {
           httpOnly: true,
           // secure: true,
             // sameSite: 'none',
-            maxAge: 30 * 24 * 60 * 60 * 1000 //expiry 7 days
+            maxAge: 30 * 24 * 60 * 60 * 1000 //expiry 30 days
         });
         
         //Sending accessToken 
-      res.json({ accessToken, message: "Login Successful"})
+      res.json({ accessToken, message: "Login Successful", user})
         
       } catch (error) {
         res.status(500).json({ error: 'Server error' });
@@ -49,10 +49,10 @@ const refresh_token = async (req, res) => {
   
     try {
       const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-      const user = { id: decoded.id, role: decoded.role };
-      const accessToken = generateToken(user, process.env.JWT_SECRET, '30m'); // Adjust the duration as needed
+      const user = await User.findById(decoded.id);
+      const accessToken = generateToken(user, process.env.JWT_SECRET, '30s'); // Adjust the duration as needed
   
-      res.json({ accessToken, message: 'Access token refreshed' });
+      res.json({ accessToken, message: 'Access token refreshed', user });
     } catch (err) {
       console.error('Refresh token error:', err);
       if (err.name === 'TokenExpiredError') {

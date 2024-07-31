@@ -10,7 +10,7 @@ router.post("/login", [
     check("password", "Password is required").not().isEmpty()
 ] ,login);
 
-router.get("/refresh-token", refresh_token );
+router.post("/refresh-token", refresh_token );
 
 router.post("/logout",verifyToken , logout);
 
