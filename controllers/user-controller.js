@@ -93,7 +93,7 @@ const approve = async (req, res) => {
 
 const getUser = async (req, res) =>{
   try{
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select("-password");
     if (!user) {
       return res.status(404).json({ message: 'User not found'})
     }
@@ -167,11 +167,6 @@ const getVerifiedUsers = async (req, res) => {
   }
 };
 
-const checkAuth = (req, res) => {
-    res.json({ isAuthenticated: true, role: req.user.role});
-}
-
-
 
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -224,7 +219,6 @@ module.exports = {
     approve,
     pendingUsers,
     register,
-    checkAuth, 
     getUser,
     updateProfile,
     getVerifiedUsers,
