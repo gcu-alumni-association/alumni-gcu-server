@@ -181,7 +181,11 @@ const forgotPassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(dummyPassword, 10);
 
     user.password = hashedPassword;
-    await user.save();
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { password: hashedPassword } },
+      { runValidators: false }  //no more validation of the other fields but only password
+    );
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
