@@ -29,7 +29,12 @@ const eventsSchema = new Schema({
     posted_date: {
         type: Date,
         default: Date.now
+    }, 
+
+    imageUrl : {
+        type: String,
     }
+    
 });
 
 module.exports = mongoose.model('Events', eventsSchema);
