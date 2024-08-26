@@ -1,22 +1,42 @@
 const express = require("express");
-const { check } = require("express-validator");
+const { body } = require("express-validator");
 const router = express.Router();
-const { verifyToken, checkAdmin } = require('../middleware/verify-token');
-const { getNews, uploadNews, getSingleNews } = require('../controllers/news-controller');
+const { verifyToken, checkAdmin } = require("../middleware/verify-token");
+const {
+	getNews,
+	uploadNews,
+	getSingleNews,
+} = require("../controllers/news-controller");
+const { uploadImage, upload } = require("../middleware/upload-images");
 
-// Middleware to set Cache-Control header
-const setCacheControl = (req, res, next) => {
-  res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-  next();
-};
+// const setCacheControl = (req, res, next) => {
+//   res.set('Cache-Control', 'public, max-age=3600');
+//   next();
+// };
 
-router.post("/upload", [
-    check("title").not().isEmpty(),
-    check("content").not().isEmpty()
-], verifyToken, checkAdmin, uploadNews);
+router.post(
+	"/upload",
+	upload.single("image"),
+	[
+		body("title").trim().notEmpty().withMessage("Title cannot be empty"),
+		body("content").trim().notEmpty().withMessage("Content cannot be empty"),
+	],
+	verifyToken,
+	checkAdmin,
+	uploadImage,
+	uploadNews
+);
 
-router.get("/get-news", setCacheControl, getNews);
+router.get(
+	"/get-news",
+	// setCacheControl,
+	getNews
+);
 
-router.get("/get-news/:id", setCacheControl, getSingleNews);
+router.get(
+	"/get-news/:id",
+	// setCacheControl,
+	getSingleNews
+);
 
 module.exports = router;
