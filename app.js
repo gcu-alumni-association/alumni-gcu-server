@@ -18,6 +18,8 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(morgan('combined')); //Used for Logging
 
