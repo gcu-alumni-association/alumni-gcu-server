@@ -1,29 +1,18 @@
 const News = require('../model/News');
-const { validationResult } = require("express-validator"); //For validation
+const { validationResult } = require("express-validator");
 
-// to get all news
 const getNews = async (req, res) => {
-    const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
   try {
-    const news = await News.find();
+    const news = await News.find().select('title content imageUrl date');
     res.json(news);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// to get a single news item by ID
 const getSingleNews = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  
   try {
-    const news = await News.findById(req.params.id);
+    const news = await News.findById(req.params.id).select('title content imageUrl date');
     if (!news) {
       return res.status(404).json({ message: "News item not found" });
     }
@@ -33,24 +22,31 @@ const getSingleNews = async (req, res) => {
   }
 };
 
-// to create news (Admin only)
 const uploadNews = async (req, res) => {
-    const errors = validationResult(req);
+  console.log('Raw body:', req.body);
+  console.log('Received file:', req.file);
+
+  const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Validation errors:', errors.array());
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const news = new News({
-    title: req.body.title,
-    content: req.body.content,
-  });
-
   try {
+    const news = new News({
+      title: req.body.title,
+      content: req.body.content,
+      imageUrl: req.file ? req.file.location : null
+    });
+
     const newNews = await news.save();
+    console.log('News saved to MongoDB:', newNews);
+
     res.status(201).json(newNews);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error("Error:", err);
+    res.status(500).json({ message: "An error occurred", error: err.toString() });
   }
 };
 
-module.exports = {getNews, uploadNews, getSingleNews };
+module.exports = { getNews, uploadNews, getSingleNews, };
