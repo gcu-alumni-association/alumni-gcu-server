@@ -15,6 +15,7 @@ const addEvents = async (req, res) => {
         event_date: req.body.event_date,
         event_time: req.body.event_time,
         posted_date: req.body.posted_date,
+        imageUrl: req.file ? req.file.location : null
     });
 
     try {
