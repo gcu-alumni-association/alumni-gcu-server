@@ -1,10 +1,7 @@
 const multer = require('multer');
 const AWS = require('aws-sdk');
 require('dotenv').config();
-const Photos = require('../model/Photos'); 
 
-
-// AWS and multer configuration
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -13,9 +10,27 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
 
-const uploadImage = async (req, res) => {
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Not an image! Please upload an image.'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } //5MB limit
+});
+
+const uploadImage = async (req, res, next) => {
+  if (!req.file) {
+    console.log('No file uploaded');
+    return next(); //continue without uploading if no file is present
+  }
+
   const bucketName = process.env.S3_BUCKET_NAME;
 
   if (!bucketName) {
@@ -32,19 +47,10 @@ const uploadImage = async (req, res) => {
   };
 
   try {
-    //Uploading file to S3
     const s3Data = await s3.upload(params).promise();
     console.log('File uploaded successfully:', s3Data.Location);
-
-    //Saving URL to MongoDB
-    const newPhoto = new Photos({
-      url: s3Data.Location
-    });
-
-    await newPhoto.save();
-    console.log('Photo URL saved to MongoDB');
-
-    res.status(200).send(`File uploaded successfully. ${s3Data.Location}`);
+    req.file.location = s3Data.Location;
+    next();
   } catch (err) {
     console.error("Error:", err);
     res.status(500).send({ message: "An error occurred", error: err });
@@ -54,4 +60,4 @@ const uploadImage = async (req, res) => {
 module.exports = { 
   uploadImage,
   upload
-}
+};
