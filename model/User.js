@@ -22,6 +22,10 @@ const userSchema = new Schema({
     type: String 
   },
 
+  roll_no: {
+    type: String,
+  },
+
   batch: {
     type: String,
     required: true
