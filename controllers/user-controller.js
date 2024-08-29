@@ -10,9 +10,9 @@ const register = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-    const { name, email, phone, batch, branch } = req.body;
+    const { name, email, phone, batch, branch, roll_no } = req.body;
     try {
-      const user = new User({ name, email, phone, batch, branch });
+      const user = new User({ name, email, phone, batch, branch, roll_no });
       await user.save();  
       console.log('New user registration pending approval:', user); 
       res.status(201).json({ message: 'Registration successful, pending admin approval.' });
@@ -96,7 +96,6 @@ const getVerifiedUsers = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-
 
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
