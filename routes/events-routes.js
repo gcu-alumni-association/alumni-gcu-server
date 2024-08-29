@@ -2,7 +2,7 @@ const express = require("express");
 const { check } = require("express-validator");
 const router = express.Router();
 const { verifyToken, checkAdmin } = require("../middleware/verify-token");
-const { addEvents, getEvents } = require("../controllers/events-controller.js");
+const { addEvents, getEvents, getSingleEvent } = require("../controllers/events-controller.js");
 const { uploadImage, upload } = require("../middleware/upload-images");
 
 // Middleware to set Cache-Control header
@@ -26,5 +26,7 @@ router.post(
 );
 
 router.get("/get-events", setCacheControl, getEvents);
+
+router.get("/get-event/:id", getSingleEvent);
 
 module.exports = router;
