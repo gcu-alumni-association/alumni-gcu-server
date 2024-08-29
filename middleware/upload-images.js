@@ -1,5 +1,6 @@
 const multer = require('multer');
 const AWS = require('aws-sdk');
+const sharp = require('sharp'); 
 require('dotenv').config();
 
 AWS.config.update({
@@ -22,31 +23,37 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } //5MB limit
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
 const uploadImage = async (req, res, next) => {
   if (!req.file) {
     console.log('No file uploaded');
-    return next(); //continue without uploading if no file is present
+    return next(); // continue without uploading if no file is present
   }
 
   const bucketName = process.env.S3_BUCKET_NAME;
 
   if (!bucketName) {
     console.error("Bucket name is not set.");
-    return res.status(500).send({ message: "Bucket name is not set in environment variables." });
+    return res.status(500).send({ message: "Bucket` name is not set in environment variables." });
   }
 
-  const params = {
-    Bucket: bucketName,
-    Key: `${Date.now()}_${req.file.originalname}`,
-    Body: req.file.buffer,
-    ContentType: req.file.mimetype,
-    ACL: 'public-read'
-  };
-
   try {
+    const compressedImage = await sharp(req.file.buffer)
+      .resize({ width: 800 }) 
+      .toFormat('jpeg') 
+      .jpeg({ quality: 80 }) 
+      .toBuffer();
+
+    const params = {
+      Bucket: bucketName,
+      Key: `${Date.now()}_${req.file.originalname}`,
+      Body: compressedImage, 
+      ContentType: 'image/jpeg', 
+      ACL: 'public-read'
+    };
+
     const s3Data = await s3.upload(params).promise();
     console.log('File uploaded successfully:', s3Data.Location);
     req.file.location = s3Data.Location;
