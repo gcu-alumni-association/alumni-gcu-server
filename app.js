@@ -6,6 +6,7 @@ const cors = require('cors');
 const helmet = require("helmet");
 const morgan = require('morgan');
 const rateLimit = require("express-rate-limit");
+const path = require('path');
 
 require('dotenv').config();
 
@@ -20,8 +21,11 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(morgan('combined')); //Used for Logging
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 //Rate Limiting
 const limiter = rateLimit({
