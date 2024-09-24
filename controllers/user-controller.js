@@ -10,16 +10,42 @@ const register = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-    const { name, email, phone, batch, branch, roll_no } = req.body;
-    try {
-      const user = new User({ name, email, phone, batch, branch, roll_no });
-      await user.save();  
-      console.log('New user registration pending approval:', user); 
-      res.status(201).json({ message: 'Registration successful, pending admin approval.' });
-    } catch (error) {
-      res.status(500).json({ error: 'Server error' });
+  const { name, email, phone, batch, branch, roll_no, password } = req.body;
+
+  // Ensure batch is a valid year
+  const currentYear = new Date().getFullYear();
+  if (batch < 2006 || batch > currentYear + 4) {
+    return res.status(400).json({ error: 'Batch must be a valid year between 1900 and ' + (currentYear + 4) });
+  }
+
+  try {
+    // Check if the email is already in use
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email is already registered' });
     }
-  };
+
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      name,
+      email,
+      phone,
+      batch,
+      branch,
+      roll_no,
+      password: hashedPassword // Save hashed password
+    });
+
+    await user.save();
+    console.log('New user registered:', user);
+
+    res.status(201).json({ message: 'Registration successful, pending admin approval.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 const getUser = async (req, res) =>{
   try{
@@ -147,11 +173,27 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+// Route to check email availability
+const checkEmail = async (req, res) => {
+  const { email } = req.body;
+  try {
+      const user = await User.findOne({ email });
+      if (user) {
+          return res.json({ available: false });
+      }
+      return res.json({ available: true });
+  } catch (error) {
+      console.error('Error checking email availability:', error);
+      return res.status(500).json({ error: 'Server error' });
+  }
+};
+
 module.exports = {
     reset_password,
     register,
     getUser,
     updateProfile,
     getVerifiedUsers,
-    forgotPassword
+    forgotPassword, 
+    checkEmail
 }
