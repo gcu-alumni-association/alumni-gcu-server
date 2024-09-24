@@ -1,25 +1,35 @@
-const Photos = require("../model/Photos");
+const path = require('path');
+const fs = require('fs').promises;
 
 const uploadImageForGallery = async (req, res) => {
-	const photos = new Photos({
-		url: req.file ? req.file.location : null,
-	});
-	try {
-		const newPhotos = await photos.save();
-		res.status(201).json(newPhotos);
-		console.log("Photo uploaded to s3 and url saved to MongoDB:", newPhotos);
-	} catch (err) {
-		res.status(400).json({ message: err.message });
-	}
+    if (!req.filesLocations || req.filesLocations.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    try {
+        // Log and respond with the paths of all uploaded files
+        console.log("Photos saved locally:", req.filesLocations);
+        res.status(201).json({
+            message: "Images uploaded successfully",
+            filePaths: req.filesLocations // Send back the paths of uploaded images
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
 const getImagesForGallery = async (req, res) => {
-	try {
-		const photos = await Photos.find().select('url');
-		res.json(photos);
-	} catch (err) {
-		res.status(500).json({ message: err.message });
-	}
+    try {
+        const galleryDir = path.join(__dirname, '..', 'uploads', 'gallery');
+        const files = await fs.readdir(galleryDir);
+
+        // Map file names to URLs for serving to the client
+        const images = files.map(file => `/uploads/gallery/${file}`);
+        
+        res.json(images);
+    } catch (err) {
+        res.status(500).json({ message: "Unable to fetch images", error: err.message });
+    }
 };
 
 module.exports = { uploadImageForGallery, getImagesForGallery };
