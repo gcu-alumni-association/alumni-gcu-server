@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const Photos = require("../model/Photos");
 const { verifyToken, checkAdmin } = require("../middleware/verify-token");
 const { upload, uploadImage } = require("../middleware/upload-images");
 const { uploadImageForGallery, getImagesForGallery } = require("../controllers/gallery-controller");
@@ -19,7 +18,7 @@ router.get(
 
 router.post(
 	"/upload",
-	upload.single("image"),
+	upload.array("images"),
 	verifyToken,
 	checkAdmin,
 	uploadImage,
