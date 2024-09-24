@@ -22,7 +22,7 @@ const { validationResult } = require("express-validator"); //For validation
 //   };
 
   
-  const pendingUsers = async (req, res) => {
+const pendingUsers = async (req, res) => {
       try {
       const users = await User.find({ isVerified: false });
       res.json(users);
@@ -30,6 +30,27 @@ const { validationResult } = require("express-validator"); //For validation
         console.error('Server error:', error);
         res.status(500).json({ error: 'Server error' });
     }
+};
+
+const approvedUsers = async (req, res) => {
+  const { batch, branch } = req.query; // Extract batch and branch from query params
+
+  try {
+    const filter = { isVerified: true };
+
+    if (batch) {
+      filter.batch = Number(batch); // Add batch filter if provided
+    }
+    if (branch) {
+      filter.branch = branch; // Add branch filter if provided
+    }
+
+    const users = await User.find(filter).select('-password -__v -_id -isVerified -role');
+    res.json(users);
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 };
 
 const approve = async (req, res) => {
@@ -56,9 +77,8 @@ const approve = async (req, res) => {
       console.error('Approval process error:', error);
       res.status(500).json({ error: 'Server error' });
     }
-  };
+};
   
-
 const rejectUser = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -110,7 +130,7 @@ const sendEmail = async (user, dummyPassword) => {
       console.error('Error sending email:', error.message);
       throw new Error('Failed to send approval email');
     }
-  };
+};
 
 
 
@@ -118,5 +138,6 @@ module.exports = {
     approve,
     pendingUsers,
     rejectUser,
-    sendEmail
+    sendEmail, 
+    approvedUsers
 }
