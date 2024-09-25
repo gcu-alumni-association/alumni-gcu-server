@@ -28,7 +28,10 @@ const uploadImage = async (req, res, next) => {
 
   try {
     const uploadDir = path.join(__dirname, '..', 'uploads');
-    const category = req.body.category || 'gallery'; // Default to 'gallery' if not specified
+    const category = req.body.category; 
+    if (!category) {
+      return res.status(400).send({ message: "Category is required!!" });
+    }
     const categoryDir = path.join(uploadDir, category);
 
     // Ensure the category directory exists
