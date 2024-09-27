@@ -16,13 +16,13 @@ const { uploadImage, upload } = require("../middleware/upload-images");
 
 router.post(
 	"/upload",
-	upload.single("image"),
+	verifyToken,
+	checkAdmin,
+	upload.array("images",5),
 	[
 		body("title").trim().notEmpty().withMessage("Title cannot be empty"),
 		body("content").trim().notEmpty().withMessage("Content cannot be empty"),
 	],
-	verifyToken,
-	checkAdmin,
 	uploadImage,
 	uploadNews
 );
