@@ -14,9 +14,13 @@ const newsSchema = new Schema({
     type: Date,
     default: Date.now,
   },
-  imageUrl: {
-    type: String,
-  }
+  images: {
+    type: [String],  // Array of strings to store image paths
+    default: []
+},
+imageFolder: {
+    type: String  // To store the name of the folder containing the images
+},
 });
 
 module.exports = mongoose.model('News', newsSchema);
