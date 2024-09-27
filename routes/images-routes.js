@@ -18,9 +18,9 @@ router.get(
 
 router.post(
 	"/upload",
-	upload.array("images"),
 	verifyToken,
 	checkAdmin,
+	upload.array("images"),
 	uploadImage,
 	uploadImageForGallery
 );
