@@ -72,6 +72,10 @@ app.use('/api/events', eventsRoutes);
 const imageRoutes = require('./routes/images-routes');
 app.use('/api/images', imageRoutes);
 
+// Blog Post Routes
+const postRoutes = require('./routes/post-routes');
+app.use('/api/posts', postRoutes);
+
 //Error handling middleware
 app.use((err, req, res, next) => {
   console.log(err.stack);
