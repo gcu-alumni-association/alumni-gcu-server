@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Post = require('../model/Post');
+const { verifyToken, checkAdmin } = require('../middleware/verify-token');
 
-router.post('/', async (req, res) => {
+
+router.post('/create', verifyToken, async (req, res) => {
     try {
         const { content } = req.body;
         
