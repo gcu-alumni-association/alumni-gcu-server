@@ -36,29 +36,58 @@ router.post('/create', verifyToken, async (req, res) => {
     }
 });
 
-// Get all posts
+// Get paginated posts
 router.get('/', async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6; // Default to 6 posts per page
+        const skip = (page - 1) * limit;
+
+        const totalPosts = await Post.countDocuments();
+        const totalPages = Math.ceil(totalPosts / limit);
+
         const posts = await Post.find()
             .populate('author', 'name batch branch')
             .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
             .exec();
         
-        res.status(200).json(posts);
+        res.status(200).json({
+            posts,
+            currentPage: page,
+            totalPages,
+            totalPosts
+        });
     } catch (error) {
         console.error('Error fetching posts:', error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
 
+// Get paginated posts for a specific user
 router.get('/user/:userId', async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6; // Default to 6 posts per page
+        const skip = (page - 1) * limit;
+
+        const totalPosts = await Post.countDocuments({ author: req.params.userId });
+        const totalPages = Math.ceil(totalPosts / limit);
+
         const posts = await Post.find({ author: req.params.userId })
             .populate('author', 'name batch branch')
             .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
             .exec();
         
-        res.status(200).json(posts);
+        res.status(200).json({
+            posts,
+            currentPage: page,
+            totalPages,
+            totalPosts
+        });
     } catch (error) {
         console.error('Error fetching user posts:', error);
         res.status(500).json({ message: "Internal server error" });
