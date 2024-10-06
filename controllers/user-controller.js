@@ -113,9 +113,75 @@ const reset_password = async (req, res) => {
     }
 };
 
-const getVerifiedUsers = async (req, res) => {
+const getUserById = async (req, res) => {
   try {
-    const users = await User.find({ isVerified: true }).select('name biography');
+    // Find user by ID from request params and exclude password
+    const user = await User.findById(req.params.id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+const recommendUsers = async (req, res) => {
+  try {
+    const loggedInUser = await User.findById(req.user.id); // Fetch logged-in user
+
+    if (!loggedInUser) {
+      return res.status(404).json({ message: 'Logged in user not found' });
+    }
+
+    // Fetch users from the same batch or branch, excluding the logged-in user
+    const recommendedUsers = await User.find({
+      _id: { $ne: loggedInUser._id },
+      isVerified: true, 
+      role: 'user',
+      $or: [
+        { batch: loggedInUser.batch },  // Recommend batchmates
+        { branch: loggedInUser.branch } // Recommend branchmates
+      ]
+    }).limit(10).select('name branch batch');
+
+    res.json(recommendedUsers);
+  } catch (error) {
+    console.error('Error fetching recommended users:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+const getVerifiedUsers = async (req, res) => {
+  const { search } = req.query; // Get search term from query parameters
+
+  try {
+    const query = {
+      _id: { $ne: req.user.id },
+      isVerified: true,
+      role: 'user',
+    };
+
+    if (search) {
+      const searchRegex = new RegExp(search, 'i'); // Case-insensitive regex for string fields
+
+      // Add conditions for name and branch (strings)
+      query.$or = [
+        { name: { $regex: searchRegex } },
+        { branch: { $regex: searchRegex } },
+      ];
+
+      // If the search is a valid number, add it to the batch filter
+      const searchNumber = parseInt(search, 10);
+      if (!isNaN(searchNumber)) {
+        query.$or.push({ batch: searchNumber });
+      }
+    }
+
+    const users = await User.find(query).select('name branch batch');
     res.json(users);
   } catch (error) {
     console.error('Error fetching verified users:', error);
@@ -195,5 +261,7 @@ module.exports = {
     updateProfile,
     getVerifiedUsers,
     forgotPassword, 
-    checkEmail
+    checkEmail,
+    getUserById,
+    recommendUsers
 }
