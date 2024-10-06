@@ -94,4 +94,31 @@ router.get('/user/:userId', async (req, res) => {
     }
 });
 
+//Deletion route
+router.delete('/:id', verifyToken, async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const userId = req.user.id;
+        const isAdmin = req.user.role === 'admin';
+
+        const post = await Post.findById(postId);
+
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
+        // Check if the user is the author of the post or an admin
+        if (post.author.toString() !== userId && !isAdmin) {
+            return res.status(403).json({ message: "You are not authorized to delete this post" });
+        }
+
+        await Post.findByIdAndDelete(postId);
+
+        res.status(200).json({ message: "Post deleted successfully" });
+    } catch (error) {
+        console.error('Error deleting post:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 module.exports = router;
