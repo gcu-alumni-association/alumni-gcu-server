@@ -2,7 +2,7 @@ const express = require("express");
 const { check } = require("express-validator");
 const router = express.Router();
 const { verifyToken, checkAdmin } = require('../middleware/verify-token');
-const { register, reset_password, getUser, updateProfile, getVerifiedUsers, forgotPassword, checkEmail } = require("../controllers/user-controller")
+const { register, reset_password, getUser, updateProfile, getVerifiedUsers, forgotPassword, checkEmail, getUserById, recommendUsers } = require("../controllers/user-controller")
 const { upload, uploadImage } = require('../middleware/upload-images')
 
 router.post("/register", [
@@ -18,6 +18,8 @@ router.post("/register", [
 
 router.get("/user", verifyToken , getUser);
 
+router.get("/profile/:id", verifyToken, getUserById);
+
 router.post("/reset-password", [
     check("email").isEmail(),
     check("oldPassword").not().isEmpty(),
@@ -31,6 +33,8 @@ router.put("/update-profile", [
   ], verifyToken, updateProfile);
 
 router.get("/verified-users", verifyToken, getVerifiedUsers)
+
+router.get("/recommend-users", verifyToken, recommendUsers)
 
 router.post("/forgot-password", [
     check("email", "Please include a valid email").isEmail()
