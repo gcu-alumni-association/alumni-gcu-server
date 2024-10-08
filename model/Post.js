@@ -14,12 +14,19 @@ const PostSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    lastEditedAt: {
+        type: Date
+    },
+    lastEditedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 });
 
-//For optimization
-
-// const populatedPost = await Post.findById(postId).populate('author', 'name');
+// For optimization
+// const populatedPost = await Post.findById(postId).populate('author', 'name').populate('lastEditedBy', 'name');
 // console.log(populatedPost.author.name);
+// if (populatedPost.lastEditedBy) console.log(populatedPost.lastEditedBy.name);
 
 module.exports = mongoose.model('Post', PostSchema);
