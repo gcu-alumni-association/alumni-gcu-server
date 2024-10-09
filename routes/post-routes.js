@@ -121,4 +121,41 @@ router.delete('/:id', verifyToken, async (req, res) => {
     }
 });
 
+//Edit posts route
+router.put('/:id', verifyToken, async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const { content, lastEditedBy } = req.body;
+        const userId = req.user.id;
+        const isAdmin = req.user.role === 'admin';
+
+        // Find the post by ID
+        const post = await Post.findById(postId);
+
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
+        // Check if the user is the author of the post or an admin
+        if (post.author.toString() !== userId && !isAdmin) {
+            return res.status(403).json({ message: "You are not authorized to edit this post" });
+        }
+
+        // Update post content and last edited info
+        post.content = content;
+        post.lastEditedAt = new Date();
+        if (lastEditedBy) {
+            post.lastEditedBy = lastEditedBy;
+        }
+
+        await post.save();
+
+        res.status(200).json({ message: "Post updated successfully", post });
+    } catch (error) {
+        console.error('Error editing post:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+
 module.exports = router;
