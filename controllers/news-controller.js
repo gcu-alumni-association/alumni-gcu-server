@@ -15,8 +15,15 @@ async function createNewsFolder(newsTitle) {
 
 const getNews = async (req, res) => {
   try {
-    const news = await News.find().select('title content images date');
-    res.json(news);
+    const newss = await News.find().select('title content images date');
+    const optimizedNews = newss.map(news => ({
+      _id: news._id,
+      title: news.title,
+      content: news.content,
+      date: news.date,
+      firstImage: news.images[0] //sending the first image
+    }));
+    res.json(optimizedNews);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
