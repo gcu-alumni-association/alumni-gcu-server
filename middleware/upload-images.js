@@ -26,7 +26,7 @@ const uploadImage = async (req, res, next) => {
 
   if (!req.files || req.files.length === 0) {
     console.log('No files uploaded');
-    return next(); // continue without uploading if no files are present
+    return res.status(400).send({ message: "No files uploaded" });
   }
 
   try {
@@ -38,18 +38,18 @@ const uploadImage = async (req, res, next) => {
 
     let categoryDir;
     let subfolderName;
-    if (category === 'events' && req.body.title) {
-      // For events, create a subdirectory with the event title
+    if (category === 'gallery') {
+      if (!req.body.albumName) {
+        return res.status(400).send({ message: "Album name is required for gallery uploads!!" });
+      }
+      subfolderName = req.body.albumName.toLowerCase().replace(/\s+/g, '-');
+      categoryDir = path.join(uploadDir, category, subfolderName);
+      console.log('Gallery category dir:', categoryDir);
+    } else if (['events', 'news'].includes(category) && req.body.title) {
       subfolderName = req.body.title.toLowerCase().replace(/\s+/g, '-');
       categoryDir = path.join(uploadDir, category, subfolderName);
-      console.log('Event category dir:', categoryDir);
-    } else if (category === 'news' && req.body.title) {
-      // For news, create a subdirectory with the news title
-      subfolderName = req.body.title.toLowerCase().replace(/\s+/g, '-');
-      categoryDir = path.join(uploadDir, category, subfolderName);
-      console.log('News category dir:', categoryDir);
+      console.log(`${category} category dir:`, categoryDir);
     } else {
-      // For other categories, just use the category name
       categoryDir = path.join(uploadDir, category);
       console.log('Category dir:', categoryDir);
     }
@@ -76,7 +76,7 @@ const uploadImage = async (req, res, next) => {
 
       // Adjust the returned path based on the category
       let returnPath;
-      if ((category === 'events' || category === 'news') && subfolderName) {
+      if (['events', 'news', 'gallery'].includes(category) && subfolderName) {
         returnPath = `/uploads/${category}/${subfolderName}/${filename}`;
       } else {
         returnPath = `/uploads/${category}/${filename}`;
@@ -85,16 +85,14 @@ const uploadImage = async (req, res, next) => {
       return returnPath;
     }));
 
-    req.filesLocations = uploadedFiles; // Save the locations to the request object for further use
+    req.filesLocations = uploadedFiles;
+    req.albumName = req.body.albumName;  // Pass albumName to the next middleware
     console.log('File locations saved to req.filesLocations:', req.filesLocations);
     next();
   } catch (err) {
     console.error("Error in uploadImage:", err);
-    res.status(500).send({ message: "An error occurred", error: err });
+    res.status(500).send({ message: "An error occurred", error: err.toString() });
   }
 };
 
-module.exports = { 
-  uploadImage,
-  upload
-};
+module.exports = { upload, uploadImage };
