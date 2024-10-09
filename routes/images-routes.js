@@ -2,7 +2,13 @@ const express = require("express");
 const router = express.Router();
 const { verifyToken, checkAdmin } = require("../middleware/verify-token");
 const { upload, uploadImage } = require("../middleware/upload-images");
-const { uploadImageForGallery, getImagesForGallery } = require("../controllers/gallery-controller");
+const { 
+  uploadImageForGallery, 
+  getImagesForGallery, 
+  getSingleAlbum, 
+  getAllImages 
+} = require("../controllers/gallery-controller");
+const { body } = require('express-validator');
 
 // Middleware to set Cache-Control header
 // const setCacheControl = (req, res, next) => {
@@ -10,19 +16,38 @@ const { uploadImageForGallery, getImagesForGallery } = require("../controllers/g
 // 	next();
 // };
 
+// Get all albums
 router.get(
-	"/get-photos",
-	// setCacheControl,
-	getImagesForGallery
+  "/albums",
+  // setCacheControl,
+  getImagesForGallery
 );
 
+// Get a single album
+router.get(
+  "/album/:id",
+  // setCacheControl,
+  getSingleAlbum
+);
+
+// Get all images from all albums
+router.get(
+  "/all-images",
+  // setCacheControl,
+  getAllImages
+);
+
+// Upload images to an album
 router.post(
-	"/upload",
-	verifyToken,
-	checkAdmin,
-	upload.array("images"),
-	uploadImage,
-	uploadImageForGallery
+  "/upload",
+  verifyToken,
+  checkAdmin,
+  [
+    body('albumName').notEmpty().withMessage('Album name is required'),
+  ],
+  upload.array("images"),
+  uploadImage,
+  uploadImageForGallery
 );
 
 module.exports = router;
