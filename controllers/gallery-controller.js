@@ -14,46 +14,72 @@ async function createGalleryAlbumFolder(albumName) {
 }
 
 const uploadImageForGallery = async (req, res) => {
-    if (!req.filesLocations || req.filesLocations.length === 0) {
-      return res.status(400).json({ message: "No files uploaded" });
-    }
-  
-    try {
-      const imageFolderPath = await createGalleryAlbumFolder(req.body.albumName);
-      const newGallery = new Gallery({
-        albumName: req.albumName,
+  if (!req.filesLocations || req.filesLocations.length === 0) {
+    return res.status(400).json({ message: "No files uploaded" });
+  }
+
+  try {
+    const imageFolderPath = await createGalleryAlbumFolder(req.body.albumName);
+    
+    //checking if an album with the same name already exists
+    let gallery = await Gallery.findOne({ albumName: req.body.albumName });
+
+    const currentDate = new Date();
+
+    if (gallery) {
+      //if the album exists, we update it
+      gallery.images = [...gallery.images, ...req.filesLocations];
+      gallery.date = currentDate; //uppdating the date also
+    } else {
+      //if the album doesn't exist, we create a new one
+      gallery = new Gallery({
+        albumName: req.body.albumName,
         images: req.filesLocations,
         imageFolder: path.basename(imageFolderPath),
+        date: currentDate 
       });
-  
-      await newGallery.save();
-  
-      res.status(201).json({
-        message: "Images uploaded successfully",
-        gallery: newGallery
-      });
-    } catch (err) {
-      console.error('Error in uploadImageForGallery:', err);
-      res.status(500).json({ message: "An error occurred", error: err.toString() });
     }
-  };
+
+    await gallery.save();
+
+    res.status(201).json({
+      message: gallery.isNew ? "Album created and images uploaded successfully" : "Images added to existing album successfully",
+      gallery: gallery
+    });
+  } catch (err) {
+    console.error('Error in uploadImageForGallery:', err);
+    res.status(500).json({ message: "An error occurred", error: err.toString() });
+  }
+};
 
 const getImagesForGallery = async (req, res) => {
   try {
     const galleries = await Gallery.find().select('albumName images date');
-    //making galleries to only return the first image in the images array
-    const optimizedGalleries = galleries.map(gallery => ({
+     //making galleries to only return the last image in the images array
+    const optimizedGalleries = galleries.map(gallery => {
+      const lastImageIndex = gallery.images.length - 1;
+      return {
         _id: gallery._id,
         albumName: gallery.albumName,
         date: gallery.date,
-        firstImage: gallery.images[0] //sending the first image
-      }));
-  
-      res.json(optimizedGalleries);
-    } catch (err) {
-      res.status(500).json({ message: "Unable to fetch images", error: err.message });
-    }
-  };
+        lastImage: gallery.images[lastImageIndex] // sending the last image
+      };
+    });
+
+    res.json(optimizedGalleries);
+  } catch (err) {
+    res.status(500).json({ message: "Unable to fetch images", error: err.message });
+  }
+};
+
+const getAlbumNames = async (req, res) => {
+  try {
+    const albumNames = await Gallery.find().select('albumName');
+    res.json(albumNames);
+  } catch (err) {
+    res.status(500).json({ message: "Unable to fetch album names", error: err.message });
+  }
+};
 
 const getSingleAlbum = async (req, res) => {
   try {
@@ -92,5 +118,6 @@ module.exports = {
                     uploadImageForGallery, 
                     getImagesForGallery,
                     getSingleAlbum,
-                    getAllImages 
+                    getAllImages,
+                    getAlbumNames
                 };
