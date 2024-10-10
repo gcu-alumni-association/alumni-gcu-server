@@ -6,7 +6,8 @@ const {
   uploadImageForGallery, 
   getImagesForGallery, 
   getSingleAlbum, 
-  getAllImages 
+  getAllImages, 
+  getAlbumNames
 } = require("../controllers/gallery-controller");
 const { body } = require('express-validator');
 
@@ -15,6 +16,14 @@ const { body } = require('express-validator');
 // 	res.set("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
 // 	next();
 // };
+
+// Get album names
+router.get(
+  "/album-names",
+  verifyToken,
+  checkAdmin,
+  getAlbumNames
+);
 
 // Get all albums
 router.get(
