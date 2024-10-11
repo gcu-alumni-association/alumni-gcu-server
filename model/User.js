@@ -83,6 +83,11 @@ const userSchema = new Schema({
       type: String,
       match: [/^https?:\/\/(www\.)?facebook\.com\/.*$/, 'Please enter a valid Facebook URL']
     }
+  },
+
+  profilePhoto: {
+    type: String,
+    default: null
   }
 
 });
