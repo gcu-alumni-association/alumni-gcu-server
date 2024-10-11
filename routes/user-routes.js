@@ -2,8 +2,8 @@ const express = require("express");
 const { check } = require("express-validator");
 const router = express.Router();
 const { verifyToken, checkAdmin } = require('../middleware/verify-token');
-const { register, reset_password, getUser, updateProfile, getVerifiedUsers, forgotPassword, checkEmail, getUserById, recommendUsers } = require("../controllers/user-controller")
-const { upload, uploadImage } = require('../middleware/upload-images')
+const { register, reset_password, getUser, updateProfile, getVerifiedUsers, forgotPassword, checkEmail, getUserById, recommendUsers, upload, uploadProfilePhoto } = require("../controllers/user-controller");
+const multer = require('multer');
 
 router.post("/register", [
     check("name", "Name is required").not().isEmpty(),
@@ -41,5 +41,23 @@ router.post("/forgot-password", [
 ], forgotPassword);
 
 router.post("/check-email", checkEmail);
+
+router.post('/upload-profile-photo', verifyToken, (req, res, next) => {
+  upload.single('profilePhoto')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      //A Multer error occurred when uploading
+      return res.status(400).json({ message: 'File upload error', details: err.message });
+    } else if (err) {
+      //An unknown error occurred when uploading
+      return res.status(400).json({ message: err.message });
+    }
+    //If file type is invalid, set a custom error
+    if (req.fileValidationError) {
+      return res.status(400).json({ message: req.fileValidationError });
+    }
+    next();
+  });
+}, uploadProfilePhoto);
+
 
 module.exports = router;
