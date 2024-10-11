@@ -1,7 +1,41 @@
 const User = require('../model/User');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
-const { validationResult } = require("express-validator"); //For validation
+const { validationResult } = require("express-validator");
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/profilephotos/')
+  },
+  filename: function (req, file, cb) {
+    const userId = req.user.id;
+    const timestamp = Date.now();
+    const originalname = path.basename(file.originalname);
+    
+    cb(null, `${userId}-${timestamp}-${originalname}`);
+}
+});
+
+const fileFilter = (req, file, cb) => {
+  const filetypes = /jpeg|jpg|png/;
+  const mimetype = filetypes.test(file.mimetype);
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    return cb(null, false); 
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter
+});
 
 
 const register = async (req, res) => {
@@ -254,6 +288,48 @@ const checkEmail = async (req, res) => {
   }
 };
 
+const uploadProfilePhoto = async (req, res) => {
+  try {
+    // Check if a file was provided
+    if (!req.file) {
+      // Differentiate between no file selected and invalid file type
+      if (req.fileValidationError) {
+        return res.status(400).json({ message: req.fileValidationError });
+      } else {
+        return res.status(400).json({ message: 'No file selected. Please choose a file to upload.' });
+      }
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if there is an existing profile photo and it's not null or undefined
+    if (user.profilePhoto && user.profilePhoto !== null) {
+      const oldPhotoPath = path.join(__dirname, '..', user.profilePhoto);
+      console.log('Old profile photo path:', oldPhotoPath); // Log the old photo path for debugging
+
+      // Try to delete the old profile photo
+      try {
+        await fs.promises.unlink(oldPhotoPath); // Delete the old photo
+        console.log(`Deleted old profile photo: ${oldPhotoPath}`);
+      } catch (error) {
+        console.error('Error deleting old profile photo:', error);
+      }
+    }
+
+    // Save the new profile photo path in the user's record
+    user.profilePhoto = req.file.path;
+    await user.save();
+
+    res.json({ message: 'Profile photo uploaded successfully', photoPath: user.profilePhoto });
+  } catch (error) {
+    console.error('Profile photo upload error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+};
+
 module.exports = {
     reset_password,
     register,
@@ -263,5 +339,7 @@ module.exports = {
     forgotPassword, 
     checkEmail,
     getUserById,
-    recommendUsers
+    recommendUsers, 
+    upload, 
+    uploadProfilePhoto
 }
