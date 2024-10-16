@@ -2,7 +2,7 @@ const express = require("express");
 const { check } = require("express-validator");
 const router = express.Router();
 const { verifyToken, checkAdmin } = require('../middleware/verify-token');
-const { register, reset_password, getUser, updateProfile, getVerifiedUsers, forgotPassword, checkEmail, getUserById, recommendUsers, upload, uploadProfilePhoto } = require("../controllers/user-controller");
+const { register, reset_password, getUser, updateProfile, getVerifiedUsers, forgotPassword, checkEmail, getUserById, recommendUsers, upload, uploadProfilePhoto, getProfilePhoto, getProfilePhotoById } = require("../controllers/user-controller");
 const multer = require('multer');
 
 router.post("/register", [
@@ -59,5 +59,6 @@ router.post('/upload-profile-photo', verifyToken, (req, res, next) => {
   });
 }, uploadProfilePhoto);
 
+router.get('/profile-photo', verifyToken, getProfilePhoto);
 
 module.exports = router;
