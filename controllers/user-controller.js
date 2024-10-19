@@ -346,6 +346,7 @@ const getProfilePhoto = async (req, res) => {
   }
 };
 
+
 module.exports = {
     reset_password,
     register,

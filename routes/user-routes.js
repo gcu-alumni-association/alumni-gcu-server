@@ -15,7 +15,6 @@ router.post("/register", [
     check('password', "Password must be at least 8 characters long").isLength({ min: 8 })
   ], register);
 
-
 router.get("/user", verifyToken , getUser);
 
 router.get("/profile/:id", verifyToken, getUserById);

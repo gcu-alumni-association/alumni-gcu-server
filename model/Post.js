@@ -21,7 +21,15 @@ const PostSchema = new mongoose.Schema({
     lastEditedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+
+    category: {
+        type: String,
+        enum: ['post', 'job', 'education'],  // Defining specific categories
+        default: 'post',                    // Default to 'post' if not specified
+        required: true
     }
+    
 });
 
 // For optimization
