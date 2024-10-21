@@ -330,9 +330,25 @@ const uploadProfilePhoto = async (req, res) => {
   }
 };
 
-const getProfilePhoto = async (req, res) => {
+// const getProfilePhoto = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user.id).select('profilePhoto');
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+//     if (!user.profilePhoto) {
+//       return res.json({ profilePhoto: null, message: "User does not have a profile photo set" });
+//     }
+//     res.json({ profilePhoto: user.profilePhoto });
+//   } catch (err) {
+//     console.error('Error fetching profile photo:', err);
+//     res.status(500).json({ message: "Unable to fetch profile photo", error: err.message });
+//   }
+// };
+
+const getProfilePhotoById = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('profilePhoto');
+    const user = await User.findById(req.params.id).select('profilePhoto');
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -359,5 +375,6 @@ module.exports = {
     recommendUsers, 
     upload, 
     uploadProfilePhoto,
-    getProfilePhoto
+    // getProfilePhoto,
+    getProfilePhotoById
 }
