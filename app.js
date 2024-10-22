@@ -30,7 +30,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 //Rate Limiting
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 100, // Limit each IP to 100 requests per `window` 
+  max: 1000, // Limit each IP to 100 requests per `window` 
 });
 app.use(limiter); // Apply the rate limiting middleware to all requests
 
