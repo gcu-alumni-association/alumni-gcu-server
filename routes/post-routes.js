@@ -42,7 +42,7 @@ router.post('/create', verifyToken, async (req, res) => {
 });
 
 // Get paginated posts with optional category filter
-router.get('/', async (req, res) => {
+router.get('/get-post', verifyToken, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 6;
