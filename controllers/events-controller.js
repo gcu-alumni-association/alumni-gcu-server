@@ -74,4 +74,31 @@ const getSingleEvent = async (req, res) => {
   }
 };
 
-module.exports = { addEvents, getEvents, getSingleEvent };
+// Event deletion
+const deleteEvent = async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const isAdmin = req.user.role === 'admin'; // Check only admin role
+
+    // Ensure the user is an admin
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'You are not authorized to delete this event' });
+    }
+
+    // Find the event by ID
+    const event = await Events.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Remove the event
+    await Events.findByIdAndDelete(eventId);
+
+    res.status(200).json({ message: 'Event deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+module.exports = { addEvents, getEvents, getSingleEvent, deleteEvent };
