@@ -5,6 +5,7 @@ const { validationResult } = require("express-validator");
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const AlumniRecord = require('../model/AlumniRecord');
 
 
 const storage = multer.diskStorage({
@@ -49,14 +50,20 @@ const register = async (req, res) => {
   // Ensure batch is a valid year
   const currentYear = new Date().getFullYear();
   if (batch < 2006 || batch > currentYear + 4) {
-    return res.status(400).json({ error: 'Batch must be a valid year between 1900 and ' + (currentYear + 4) });
+    return res.status(400).json({ error: 'Batch must be a valid year between 2006 and ' + (currentYear + 4) });
   }
 
   try {
     // Check if the email is already in use
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ 
+      $or: [
+        { email },
+        { roll_no, batch, branch }
+      ]
+    });
+
     if (existingUser) {
-      return res.status(400).json({ error: 'Email is already registered' });
+      return res.status(400).json({ error: 'User with the provided email or alumni details is already registered' });
     }
 
     // Hash the password before saving
@@ -69,17 +76,32 @@ const register = async (req, res) => {
       batch,
       branch,
       roll_no,
-      password: hashedPassword // Save hashed password
+      password: hashedPassword, // Save hashed password
+      isVerified: false // Set to false initially
     });
 
-    await user.save();
-    console.log('New user registered:', user);
+    // Check if user data matches alumni records for auto-approval
+    const alumniMatch = await AlumniRecord.findOne({
+      name,
+      roll_no,
+      batch,
+      branch
+    });
 
-    res.status(201).json({ message: 'Registration successful, pending admin approval.' });
+    if (alumniMatch) {
+      user.isVerified = true; // Auto-approve if matched
+      console.log('User auto-approved:', user);
+    }
+
+    await user.save();
+
+    const message = user.isVerified ? 'Registration successful, user auto-approved.' : 'Registration successful, pending admin approval.';
+    res.status(201).json({ message });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 const getUser = async (req, res) =>{
   try{
@@ -274,19 +296,31 @@ const forgotPassword = async (req, res) => {
 };
 
 // Route to check email availability
+let debounceTimeout;
+
 const checkEmail = async (req, res) => {
   const { email } = req.body;
-  try {
+  
+  // Clear the previous timeout if it exists
+  if (debounceTimeout) {
+    clearTimeout(debounceTimeout);
+  }
+
+  // Set a new timeout for debouncing
+  debounceTimeout = setTimeout(async () => {
+    try {
       const user = await User.findOne({ email });
       if (user) {
-          return res.json({ available: false });
+        return res.json({ available: false });
       }
       return res.json({ available: true });
-  } catch (error) {
+    } catch (error) {
       console.error('Error checking email availability:', error);
       return res.status(500).json({ error: 'Server error' });
-  }
+    }
+  }, 1000); // Adjust the delay time as needed | now set to 1s
 };
+
 
 const uploadProfilePhoto = async (req, res) => {
   try {
