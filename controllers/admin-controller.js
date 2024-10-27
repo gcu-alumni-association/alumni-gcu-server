@@ -2,6 +2,10 @@ const User = require('../model/User');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const { validationResult } = require("express-validator"); //For validation
+const csv = require('csv-parser');
+const multer = require('multer');
+const fs = require('fs');
+const AlumniRecord = require('../model/AlumniRecord');
 
 
 // const register = async (req, res) => {
@@ -133,11 +137,74 @@ const sendEmail = async (user, dummyPassword) => {
 };
 
 
+const upload = multer({ dest: 'uploads/' });
+
+const requiredHeaders = ['name', 'roll_no', 'batch', 'branch'];
+
+// Bulk insert alumni data from CSV
+const bulkAddAlumni = async (req, res) => {
+  const filePath = req.file.path;
+  const alumniData = [];
+  let validationError = false;
+
+  fs.createReadStream(filePath)
+    .pipe(csv())
+    .on('headers', (headers) => {
+      const invalidHeaders = headers.filter(header => !requiredHeaders.includes(header));
+      if (invalidHeaders.length > 0 || headers.length !== requiredHeaders.length) {
+        validationError = true;
+        return res.status(400).json({ error: 'Invalid CSV format. Required headers: name, roll_no, batch, branch.' });
+      }
+    })
+    .on('data', (row) => {
+      if (!validationError) {
+        const { name, roll_no, batch, branch } = row;
+
+        // Validate row data
+        if (!name || !roll_no || !batch || !branch) {
+          validationError = true;
+          return res.status(400).json({ error: `Invalid data in row: ${JSON.stringify(row)}` });
+        }
+
+        // Validate batch year
+        const currentYear = new Date().getFullYear();
+        if (isNaN(batch) || batch < 2006 || batch > currentYear + 4) {
+          validationError = true;
+          return res.status(400).json({ error: `Invalid batch year in row: ${JSON.stringify(row)}. Batch must be between 2006 and ${currentYear + 4}.` });
+        }
+
+        alumniData.push(row);
+      }
+    })
+    .on('end', async () => {
+      if (!validationError) {
+        try {
+          console.log('Alumni data to insert:', alumniData); // Log data for insertion
+          await AlumniRecord.insertMany(alumniData);
+          res.status(201).json({ message: 'Alumni records added successfully.' });
+        } catch (error) {
+          console.error('Error inserting records:', error); // Detailed logging
+          res.status(500).json({ error: 'Failed to add alumni records.' });
+        } finally {
+          fs.unlinkSync(filePath); // Clean up
+        }
+      }
+    })
+    .on('error', (error) => {
+      console.error('Error processing the file:', error);
+      res.status(500).json({ error: 'Error processing the file.' });
+      fs.unlinkSync(filePath); // Clean up
+    });
+};
+
+
+
 
 module.exports = {
     approve,
     pendingUsers,
     rejectUser,
     sendEmail, 
-    approvedUsers
+    approvedUsers,
+    bulkAddAlumni
 }
