@@ -101,4 +101,38 @@ const deleteEvent = async (req, res) => {
   }
 };
 
-module.exports = { addEvents, getEvents, getSingleEvent, deleteEvent };
+// Edit event details
+const editEvent = async (req, res) => {
+  const eventId = req.params.id;
+  const { title, content, organizer, event_date, event_time, posted_date } = req.body;
+  const newImages = req.files ? req.files.map(file => file.path) : [];
+
+  try {
+    const event = await Events.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Update fields if they are provided in the request
+    event.title = title || event.title;
+    event.content = content || event.content;
+    event.organizer = organizer || event.organizer;
+    event.event_date = event_date || event.event_date;
+    event.event_time = event_time || event.event_time;
+    event.posted_date = posted_date || event.posted_date;
+
+    // Update images if new ones are uploaded
+    if (newImages.length > 0) {
+      // Optionally, delete old images here if required
+      event.images = newImages;
+    }
+
+    await event.save();
+    res.status(200).json({ message: 'Event updated successfully', event });
+  } catch (error) {
+    console.error('Error updating event:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+module.exports = { addEvents, getEvents, getSingleEvent, deleteEvent, editEvent };
