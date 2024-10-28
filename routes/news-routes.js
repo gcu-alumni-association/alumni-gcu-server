@@ -6,6 +6,8 @@ const {
 	getNews,
 	uploadNews,
 	getSingleNews,
+	editNews,
+	deleteNews
 } = require("../controllers/news-controller");
 const { uploadImage, upload } = require("../middleware/upload-images");
 
@@ -38,5 +40,9 @@ router.get(
 	// setCacheControl,
 	getSingleNews
 );
+
+router.put("/edit/:id", verifyToken, checkAdmin, upload.array("images", 5), editNews);
+
+router.delete("/delete/:id", verifyToken, checkAdmin, deleteNews);
 
 module.exports = router;
