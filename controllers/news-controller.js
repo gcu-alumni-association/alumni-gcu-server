@@ -13,6 +13,7 @@ async function createNewsFolder(newsTitle) {
   return folderPath;
 }
 
+// Get all news
 const getNews = async (req, res) => {
   try {
     const news = await News.find().select('title content images date');
@@ -21,7 +22,7 @@ const getNews = async (req, res) => {
       title: news.title,
       content: news.content,
       date: news.date,
-      firstImage: news.images[0] //sending the first image
+      firstImage: news.images[0] // Sending the first image
     }));
     res.json(optimizedNews);
   } catch (err) {
@@ -29,6 +30,7 @@ const getNews = async (req, res) => {
   }
 };
 
+// Get a single news item
 const getSingleNews = async (req, res) => {
   try {
     const news = await News.findById(req.params.id).select('title content images date');
@@ -41,20 +43,15 @@ const getSingleNews = async (req, res) => {
   }
 };
 
+// Upload new news
 const uploadNews = async (req, res) => {
-  console.log('Received request body:', req.body);
-  console.log('Received files:', req.files);
-  console.log('File locations:', req.filesLocations);
-
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    console.log('Validation errors:', errors.array());
     return res.status(400).json({ errors: errors.array() });
   }
 
   try {
     const newsFolderPath = await createNewsFolder(req.body.title);
-    console.log('Created news folder:', newsFolderPath);
 
     const news = new News({
       title: req.body.title,
@@ -69,13 +66,58 @@ const uploadNews = async (req, res) => {
     }
 
     const newNews = await news.save();
-    console.log('News saved to database:', newNews);
-
     res.status(201).json(newNews);
   } catch (err) {
-    console.error('Error in uploadNews:', err);
     res.status(500).json({ message: "An error occurred", error: err.toString() });
   }
 };
 
-module.exports = { getNews, uploadNews, getSingleNews };
+// Edit news details (Admin only)
+const editNews = async (req, res) => {
+  const newsId = req.params.id;
+  const { title, content, date } = req.body;
+  const newImages = req.files ? req.files.map(file => file.path) : [];
+
+  try {
+    const news = await News.findById(newsId);
+    if (!news) {
+      return res.status(404).json({ message: "News item not found" });
+    }
+
+    // Update fields if provided
+    news.title = title || news.title;
+    news.content = content || news.content;
+    news.date = date || news.date;
+
+    // Update images if new ones are uploaded
+    if (newImages.length > 0) {
+      news.images = newImages;
+    }
+
+    await news.save();
+    res.status(200).json({ message: "News updated successfully", news });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
+  }
+};
+
+// Delete news (Admin only)
+const deleteNews = async (req, res) => {
+  try {
+    const newsId = req.params.id;
+    const news = await News.findById(newsId);
+
+    if (!news) {
+      return res.status(404).json({ message: "News item not found" });
+    }
+
+    // Delete the news item
+    await News.findByIdAndDelete(newsId);
+
+    res.status(200).json({ message: "News deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
+  }
+};
+
+module.exports = { getNews, uploadNews, getSingleNews, editNews, deleteNews };
