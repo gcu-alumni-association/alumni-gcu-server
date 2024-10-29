@@ -114,10 +114,134 @@ const getAllImages = async (req, res) => {
     }
   };
 
+  const deleteSelectedImages = async (req, res) => {
+    const { albumId, selectedImages } = req.body;
+  
+    if (!albumId || !selectedImages || !Array.isArray(selectedImages)) {
+      return res.status(400).json({ message: "Invalid request. Album ID and selected images are required" });
+    }
+  
+    try {
+      // Find the gallery album
+      const gallery = await Gallery.findById(albumId);
+      if (!gallery) {
+        return res.status(404).json({ message: "Album not found" });
+      }
+  
+      const basePath = path.join(__dirname, '..');
+  
+      // Delete selected images from filesystem
+      const deletePromises = selectedImages.map(async (imageUrl) => {
+        const relativePath = imageUrl.replace(/^\/uploads/, '');
+        const absolutePath = path.join(basePath, 'uploads', relativePath);
+  
+        try {
+          await fs.unlink(absolutePath);
+          return imageUrl;
+        } catch (err) {
+          console.error(`Error deleting file ${absolutePath}:`, err);
+          return null;
+        }
+      });
+  
+      const deletedFiles = await Promise.all(deletePromises);
+      const successfullyDeleted = deletedFiles.filter(url => url !== null);
+  
+      // Update gallery document by removing deleted images
+      gallery.images = gallery.images.filter(image => !successfullyDeleted.includes(image));
+      await gallery.save();
+  
+      // Check if album is empty and delete folder if it is
+      if (gallery.images.length === 0) {
+        const albumFolderPath = path.join(basePath, 'uploads', 'gallery', gallery.imageFolder);
+        try {
+          await fs.rmdir(albumFolderPath);
+          // If album is empty, delete the album document as well
+          await Gallery.findByIdAndDelete(albumId);
+          return res.json({
+            message: "Album deleted successfully as it had no images",
+            deletedImages: successfullyDeleted,
+            albumDeleted: true
+          });
+        } catch (err) {
+          console.error('Error deleting album folder:', err);
+        }
+      }
+  
+      res.json({
+        message: "Selected images deleted successfully",
+        deletedImages: successfullyDeleted,
+        remainingImages: gallery.images,
+        albumDeleted: false
+      });
+  
+    } catch (err) {
+      console.error('Error in deleteSelectedImages:', err);
+      res.status(500).json({ message: "An error occurred", error: err.toString() });
+    }
+  };
+
+// New function to delete entire album
+const deleteAlbum = async (req, res) => {
+  const { albumId } = req.params;
+
+  if (!albumId) {
+    return res.status(400).json({ message: "Album ID is required" });
+  }
+
+  try {
+    // Find the gallery album
+    const gallery = await Gallery.findById(albumId);
+    if (!gallery) {
+      return res.status(404).json({ message: "Album not found" });
+    }
+
+    const basePath = path.join(__dirname, '..');
+
+    // Delete all images from filesystem
+    const deletePromises = gallery.images.map(async (imageUrl) => {
+      const relativePath = imageUrl.replace(/^\/uploads/, '');
+      const absolutePath = path.join(basePath, 'uploads', relativePath);
+
+      try {
+        await fs.unlink(absolutePath);
+        return true;
+      } catch (err) {
+        console.error(`Error deleting file ${absolutePath}:`, err);
+        return false;
+      }
+    });
+
+    await Promise.all(deletePromises);
+
+    // Delete the album folder
+    const albumFolderPath = path.join(basePath, 'uploads', 'gallery', gallery.imageFolder);
+    try {
+      await fs.rmdir(albumFolderPath);
+    } catch (err) {
+      console.error('Error deleting album folder:', err);
+    }
+
+    // Delete the album document from MongoDB
+    await Gallery.findByIdAndDelete(albumId);
+
+    res.json({
+      message: "Album deleted successfully",
+      albumDeleted: true
+    });
+
+  } catch (err) {
+    console.error('Error in deleteAlbum:', err);
+    res.status(500).json({ message: "An error occurred", error: err.toString() });
+  }
+};
+
 module.exports = {  
                     uploadImageForGallery, 
                     getImagesForGallery,
                     getSingleAlbum,
                     getAllImages,
-                    getAlbumNames
+                    getAlbumNames,
+                    deleteSelectedImages,
+                    deleteAlbum
                 };
