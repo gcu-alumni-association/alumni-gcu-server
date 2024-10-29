@@ -7,7 +7,9 @@ const {
   getImagesForGallery, 
   getSingleAlbum, 
   getAllImages, 
-  getAlbumNames
+  getAlbumNames,
+  deleteSelectedImages,
+  deleteAlbum
 } = require("../controllers/gallery-controller");
 const { body } = require('express-validator');
 
@@ -59,4 +61,22 @@ router.post(
   uploadImageForGallery
 );
 
+router.delete(
+  "/delete-selected",
+  verifyToken,
+  checkAdmin,
+  [
+    body('albumId').notEmpty().withMessage('Album ID is required'),
+    body('selectedImages').isArray().withMessage('Selected images must be an array'),
+    body('selectedImages.*').isString().withMessage('Each selected image must be a string')
+  ],
+  deleteSelectedImages
+);
+
+router.delete(
+  "/album/:albumId",
+  verifyToken,
+  checkAdmin,
+  deleteAlbum
+);
 module.exports = router;
