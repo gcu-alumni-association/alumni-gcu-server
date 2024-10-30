@@ -33,9 +33,18 @@ const login = async (req, res) => {
         });
         
         //Sending accessToken 
-        const userInfo = { id: user._id, name: user.name, email: user.email, role: user.role, isVerified: user.isVerified, biography: user.biography, currentWorkingPlace: user.currentWorkingPlace, socialLinks: user.socialLinks };
+        const userInfo = { 
+          id: user._id, 
+          name: user.name, 
+          email: user.email, 
+          role: user.role,
+          isVerified: user.isVerified, 
+          biography: user.biography, 
+          currentWorkingPlace: user.currentWorkingPlace, 
+          socialLinks: user.socialLinks 
+      };
       
-        res.json({ accessToken, message: "Login Successful", userInfo})
+      res.json({ accessToken, message: "Login Successful", user: userInfo }); // Adjusted user field name
         
       } catch (error) {
         res.status(500).json({ error: 'Server error' });
