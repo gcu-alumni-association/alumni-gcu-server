@@ -28,6 +28,9 @@ router.post("/reset-password", [
 router.put("/update-profile", [
     check("biography").optional().isString(),
     check("currentWorkingPlace").optional().isString(),
+    check("address").optional().isString(),               
+    check("designation").optional().isString(),          
+    check("achievements").optional().isArray(),           
     check("socialLinks").optional().isObject()
   ], verifyToken, updateProfile);
 

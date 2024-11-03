@@ -121,7 +121,7 @@ const updateProfile = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { biography, currentWorkingPlace, socialLinks } = req.body;
+  const { biography, currentWorkingPlace, socialLinks,  address, designation, achievements } = req.body;
 
   try {
     const user = await User.findById(req.user.id);
@@ -131,6 +131,9 @@ const updateProfile = async (req, res) => {
 
     user.biography = biography || user.biography;
     user.currentWorkingPlace = currentWorkingPlace || user.currentWorkingPlace;
+    user.address = address || user.address;
+    user.designation = designation || user.designation;
+    user.achievements = achievements || user.achievements;
     user.socialLinks = {
       linkedin: socialLinks.linkedin || user.socialLinks.linkedin,
       facebook: socialLinks.facebook || user.socialLinks.facebook

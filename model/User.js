@@ -74,6 +74,18 @@ const userSchema = new Schema({
     type: String,
   },
 
+  address: {
+    type: String,
+  },
+
+  designation: {
+    type: String,
+  },
+
+  achievements: {
+    type: [String],  // Array of achievements as strings
+  },
+
   socialLinks: {
     linkedin: { 
       type: String,
