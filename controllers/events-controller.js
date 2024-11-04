@@ -12,6 +12,19 @@ async function createEventFolder(eventTitle) {
   return folderPath;
 }
 
+// Helper function to delete Events folder
+async function deleteEventFolder(folderName) {
+  if (!folderName) return;
+  
+  try {
+    const folderPath = path.join(__dirname, '..', 'uploads', 'events', folderName);
+    await fs.rm(folderPath, { recursive: true, force: true });
+    console.log(`Successfully deleted folder: ${folderPath}`);
+  } catch (error) {
+    console.error(`Error deleting folder: ${error}`);
+  }
+}
+
 // To create events (admin only)
 const addEvents = async (req, res) => {
   console.log('Received request body:', req.body);
@@ -91,6 +104,8 @@ const deleteEvent = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
+    // Delete the image folder first
+    await deleteEventFolder(event.imageFolder);
     // Remove the event
     await Events.findByIdAndDelete(eventId);
 

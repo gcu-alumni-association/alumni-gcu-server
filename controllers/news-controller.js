@@ -12,6 +12,18 @@ async function createNewsFolder(newsTitle) {
   
   return folderPath;
 }
+// Helper function to delete news folder
+async function deleteNewsFolder(folderName) {
+  if (!folderName) return;
+  
+  try {
+    const folderPath = path.join(__dirname, '..', 'uploads', 'news', folderName);
+    await fs.rm(folderPath, { recursive: true, force: true });
+    console.log(`Successfully deleted folder: ${folderPath}`);
+  } catch (error) {
+    console.error(`Error deleting folder: ${error}`);
+  }
+}
 
 // Get all news
 const getNews = async (req, res) => {
@@ -111,6 +123,8 @@ const deleteNews = async (req, res) => {
       return res.status(404).json({ message: "News item not found" });
     }
 
+    // Delete the image folder first
+    await deleteNewsFolder(news.imageFolder);
     // Delete the news item
     await News.findByIdAndDelete(newsId);
 
