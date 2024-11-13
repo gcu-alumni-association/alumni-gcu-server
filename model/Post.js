@@ -25,16 +25,17 @@ const PostSchema = new mongoose.Schema({
 
     category: {
         type: String,
-        enum: ['post', 'job', 'education'],  // Defining specific categories
-        default: 'post',                    // Default to 'post' if not specified
+        enum: ['post', 'job', 'education'], 
+        default: 'post',                    
         required: true
-    }
-    
-});
+    },
 
-// For optimization
-// const populatedPost = await Post.findById(postId).populate('author', 'name').populate('lastEditedBy', 'name');
-// console.log(populatedPost.author.name);
-// if (populatedPost.lastEditedBy) console.log(populatedPost.lastEditedBy.name);
+    likes: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
+    ]
+});
 
 module.exports = mongoose.model('Post', PostSchema);

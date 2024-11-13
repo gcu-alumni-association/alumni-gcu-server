@@ -22,7 +22,8 @@ router.post('/create', verifyToken, async (req, res) => {
             content,
             author: userId,
             category,  // Save category in the post
-            createdAt: new Date()
+            createdAt: new Date(),
+            likes: []
         });
         
         await newPost.save();
@@ -94,6 +95,7 @@ router.get('/user/:userId', async (req, res) => {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
+            .select('content author createdAt likes') // Include specific fields
             .exec();
         
         res.status(200).json({
@@ -167,6 +169,36 @@ router.put('/:id', verifyToken, async (req, res) => {
         res.status(200).json({ message: "Post updated successfully", post });
     } catch (error) {
         console.error('Error editing post:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// Toggle like on a post
+router.put('/:id/like', verifyToken, async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const userId = req.user.id;
+
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
+        // Check if the user has already liked the post
+        const hasLiked = post.likes.includes(userId);
+
+        if (hasLiked) {
+            // If liked, remove the like
+            post.likes = post.likes.filter((id) => id.toString() !== userId);
+        } else {
+            // If not liked, add the like
+            post.likes.push(userId);
+        }
+
+        await post.save();
+        res.status(200).json({ message: "Like toggled successfully", likes: post.likes.length });
+    } catch (error) {
+        console.error('Error toggling like:', error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
