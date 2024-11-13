@@ -196,12 +196,13 @@ router.put('/:id/like', verifyToken, async (req, res) => {
         }
 
         await post.save();
-        res.status(200).json({ message: "Like toggled successfully", likes: post.likes.length });
+
+        // Send the updated likes array in the response
+        res.status(200).json({ message: "Like toggled successfully", likes: post.likes });
     } catch (error) {
         console.error('Error toggling like:', error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
-
 
 module.exports = router;
