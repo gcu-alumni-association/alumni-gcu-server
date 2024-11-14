@@ -76,6 +76,9 @@ app.use('/api/images', imageRoutes);
 const postRoutes = require('./routes/post-routes');
 app.use('/api/posts', postRoutes);
 
+const feedbackRoutes = require('./routes/feedback-routes');
+app.use('/api/feedback', feedbackRoutes)
+
 //Error handling middleware
 app.use((err, req, res, next) => {
   console.log(err.stack);

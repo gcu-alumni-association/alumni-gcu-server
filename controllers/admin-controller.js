@@ -108,32 +108,39 @@ const rejectUser = async (req, res) => {
     }
 };
 
-const sendEmail = async (user, dummyPassword) => {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        auth: {
-          user: 'mayra.rau74@ethereal.email',
-          pass: 'CssjERRDPCrwvKxt23'
-        }
-      });
-  
+const sendEmail = async (users, emailContent, subject) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      auth: {
+        user: 'mayra.rau74@ethereal.email',
+        pass: 'CssjERRDPCrwvKxt23'
+      }
+    });
+
+    // Ensure `users` is an array even if a single user is passed
+    const recipients = Array.isArray(users) ? users : [users];
+
+    // Loop through users and send email to each one
+    for (let user of recipients) {
       const mailOptions = {
         from: 'mayra.rau74@ethereal.email',
-        to: user.email,
-        subject: 'Account Approved',
-        text: `Your account has been approved. Your temporary password is ${dummyPassword}`
+        to: user.email,  // Send to the current user's email
+        subject: subject || 'Notification',  // Subject provided or default
+        text: emailContent || `Your account has been updated.`,  // Default message or provided email content
       };
-  
+
+      // Send email
       const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent:', info.messageId);
+      console.log(`Email sent to ${user.email}:`, info.messageId);
       console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
-  
-    } catch (error) {
-      console.error('Error sending email:', error.message);
-      throw new Error('Failed to send approval email');
     }
+
+  } catch (error) {
+    console.error('Error sending email:', error.message);
+    throw new Error('Failed to send email(s)');
+  }
 };
 
 
