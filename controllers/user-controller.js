@@ -47,15 +47,13 @@ const register = async (req, res) => {
 
   const { name, email, phone, batch, branch, roll_no, password } = req.body;
 
-  // Ensure batch is a valid year
   const currentYear = new Date().getFullYear();
   if (batch < 2006 || batch > currentYear + 4) {
     return res.status(400).json({ error: 'Batch must be a valid year between 2006 and ' + (currentYear + 4) });
   }
 
   try {
-    // Check if the email is already in use
-    const existingUser = await User.findOne({ 
+    const existingUser = await User.findOne({
       $or: [
         { email },
         { roll_no, batch, branch }
@@ -80,7 +78,6 @@ const register = async (req, res) => {
       isVerified: false // Set to false initially
     });
 
-    // Check if user data matches alumni records for auto-approval
     const alumniMatch = await AlumniRecord.findOne({
       name,
       roll_no,
@@ -95,12 +92,44 @@ const register = async (req, res) => {
 
     await user.save();
 
+    // Send registration confirmation email
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      auth: {
+        user: 'mayra.rau74@ethereal.email',
+        pass: 'CssjERRDPCrwvKxt23'
+      }
+    });
+
+    const mailOptions = {
+      from: 'mayra.rau74@ethereal.email',
+      to: user.email,
+      subject: 'Registration Confirmation',
+      text: user.isVerified ?
+        `Dear ${user.name},\n\nThank you for registering with us. Your account has been automatically verified based on our records. You can now log in to your account.\n\nBest regards,\nGCU Alumni Association` :
+        `Dear ${user.name},\n\nThank you for registering with us. Your registration is successful, and it is pending verification. We will notify you once your account is approved.\n\nBest regards,\nGCU Alumni Association`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log('Error sending registration email:', error.message);
+        // Don't fail the entire registration if email fails to send
+        return console.error('Failed to send email:', error.message);
+      }
+      console.log('Confirmation email sent:', info.messageId);
+      console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+    });
+
     const message = user.isVerified ? 'Registration successful, user auto-approved.' : 'Registration successful, pending admin approval.';
     res.status(201).json({ message });
+
   } catch (error) {
+    console.error('Registration process error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 
 const getUser = async (req, res) =>{
@@ -298,31 +327,22 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// Route to check email availability
-let debounceTimeout;
 
 const checkEmail = async (req, res) => {
   const { email } = req.body;
-  
-  // Clear the previous timeout if it exists
-  if (debounceTimeout) {
-    clearTimeout(debounceTimeout);
-  }
 
-  // Set a new timeout for debouncing
-  debounceTimeout = setTimeout(async () => {
-    try {
-      const user = await User.findOne({ email });
-      if (user) {
-        return res.json({ available: false });
-      }
-      return res.json({ available: true });
-    } catch (error) {
-      console.error('Error checking email availability:', error);
-      return res.status(500).json({ error: 'Server error' });
+  try {
+    const user = await User.findOne({ email });
+    if (user) {
+      return res.json({ available: false });
     }
-  }, 1000); // Adjust the delay time as needed | now set to 1s
+    return res.json({ available: true });
+  } catch (error) {
+    console.error('Error checking email availability:', error);
+    return res.status(500).json({ error: 'Server error' });
+  }
 };
+
 
 
 const uploadProfilePhoto = async (req, res) => {
