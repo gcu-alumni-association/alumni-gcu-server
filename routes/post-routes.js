@@ -202,6 +202,74 @@ router.put('/:id/like', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Error toggling like:', error);
         res.status(500).json({ message: "Internal server error" });
+    } 
+});
+
+//Comment replies
+router.post('/:id/comments', verifyToken, async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const { content } = req.body;
+
+        if (!content || content.trim() === '') {
+            return res.status(400).json({ message: "Comment content cannot be empty" });
+        }
+
+        const comment = {
+            content,
+            author: req.user.id,
+            createdAt: new Date()
+        };
+
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
+        post.comments.push(comment);
+        await post.save();
+
+        const populatedComment = await Post.findById(postId)
+            .populate('comments.author', 'name');
+
+        res.status(201).json({ comments: populatedComment.comments });
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+//Delete comment
+router.delete('/:postId/comments/:commentId', verifyToken, async (req, res) => {
+    try {
+        const { postId, commentId } = req.params;
+        const userId = req.user.id;
+        const isAdmin = req.user.role === 'admin';
+
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
+        // Find the comment by ID
+        const commentIndex = post.comments.findIndex(comment => comment._id.toString() === commentId);
+        if (commentIndex === -1) {
+            return res.status(404).json({ message: "Comment not found" });
+        }
+
+        // Check if the user is the author of the comment or an admin
+        if (post.comments[commentIndex].author.toString() !== userId && !isAdmin) {
+            return res.status(403).json({ message: "You are not authorized to delete this comment" });
+        }
+
+        // Remove the comment using splice
+        post.comments.splice(commentIndex, 1);
+        await post.save();
+
+        res.status(200).json({ message: "Comment deleted successfully", comments: post.comments });
+    } catch (error) {
+        console.error('Error deleting comment:', error);
+        res.status(500).json({ message: "Internal server error" });
     }
 });
 
