@@ -92,6 +92,7 @@ router.get('/user/:userId', async (req, res) => {
 
         const posts = await Post.find({ author: req.params.userId })
             .populate('author', 'name batch branch')
+            .populate('comments.author', 'name')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
