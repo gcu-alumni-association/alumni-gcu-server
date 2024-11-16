@@ -282,8 +282,6 @@ router.post('/:postId/comments', verifyToken, async (req, res) => {
     }
 });
 
-module.exports = router;
-
 // Delete a comment
   router.delete('/:postId/comments/:commentId', verifyToken, async (req, res) => {
     try {
