@@ -62,6 +62,7 @@ router.get('/get-post', verifyToken, async (req, res) => {
         // Fetch posts based on the filter, sorted by creation date
         const posts = await Post.find(filter)
             .populate('author', 'name batch branch')
+            .populate('comments.author', 'name')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
@@ -210,9 +211,7 @@ router.put('/:id/like', verifyToken, async (req, res) => {
 router.post('/:postId/comments', verifyToken, async (req, res) => {
     try {
         const { text } = req.body;
-        console.log('Received comment text:', text); // Debug log
-
-        // Strict input validation
+        
         if (!text || typeof text !== 'string') {
             return res.status(400).json({
                 message: 'Comment text must be provided as a string'
@@ -226,43 +225,29 @@ router.post('/:postId/comments', verifyToken, async (req, res) => {
             });
         }
 
-        // Find post and verify it exists
         const post = await Post.findById(req.params.postId);
         if (!post) {
             return res.status(404).json({ message: 'Post not found' });
         }
 
-        // Create comment document directly with mongoose
+        // Create new comment
         const newComment = {
             text: trimmedText,
             author: req.user.id,
             createdAt: new Date()
         };
 
-        // Add comment using MongoDB push operator
-        const updatedPost = await Post.findByIdAndUpdate(
-            req.params.postId,
-            { 
-                $push: { 
-                    comments: newComment 
-                } 
-            },
-            { 
-                new: true, 
-                runValidators: true 
-            }
-        ).populate('comments.author', 'name');
+        // Add comment to post
+        post.comments.push(newComment);
+        await post.save();
 
-        if (!updatedPost) {
-            return res.status(404).json({ message: 'Failed to add comment' });
-        }
+        // Find the post again and populate the newly added comment's author
+        const updatedPost = await Post.findById(post._id)
+            .populate('comments.author', 'name batch branch')
+            .exec();
 
-        // Get the newly added comment
+        // Get the newly added comment with populated author
         const addedComment = updatedPost.comments[updatedPost.comments.length - 1];
-
-        // Debug logs
-        console.log('New comment added:', addedComment);
-        console.log('Updated post comments:', updatedPost.comments);
 
         res.status(201).json(addedComment);
     } catch (error) {
@@ -282,11 +267,47 @@ router.post('/:postId/comments', verifyToken, async (req, res) => {
     }
 });
 
-// Delete a comment
-  router.delete('/:postId/comments/:commentId', verifyToken, async (req, res) => {
+// Get posts with fully populated comments
+router.get('/get-post', verifyToken, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6;
+        const skip = (page - 1) * limit;
+        
+        const category = req.query.category || 'post';
+        const filter = { category };
+        
+        const totalPosts = await Post.countDocuments(filter);
+        const totalPages = Math.ceil(totalPosts / limit);
+        
+        // Update the populate options to include more user fields
+        const posts = await Post.find(filter)
+            .populate('author', 'name batch branch')
+            .populate('comments.author', 'name batch branch')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .exec();
+        
+        res.status(200).json({
+            posts,
+            currentPage: page,
+            totalPages,
+            totalPosts
+        });
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// Delete comment route with proper population
+router.delete('/:postId/comments/:commentId', verifyToken, async (req, res) => {
     try {
         // Find post and verify it exists
-        const post = await Post.findById(req.params.postId);
+        const post = await Post.findById(req.params.postId)
+            .populate('comments.author', 'name batch branch');
+            
         if (!post) {
             return res.status(404).json({ message: 'Post not found' });
         }
@@ -303,31 +324,23 @@ router.post('/:postId/comments', verifyToken, async (req, res) => {
         const comment = post.comments[commentIndex];
 
         // Check if user is authorized to delete the comment
-        if (comment.author.toString() !== req.user.id && req.user.role !== 'admin') {
+        if (comment.author._id.toString() !== req.user.id && req.user.role !== 'admin') {
             return res.status(403).json({ message: 'Not authorized to delete this comment' });
         }
 
-        // Remove the comment using MongoDB pull operator
-        const updatedPost = await Post.findByIdAndUpdate(
-            req.params.postId,
-            {
-                $pull: {
-                    comments: { _id: req.params.commentId }
-                }
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        );
+        // Remove the comment
+        post.comments.pull({ _id: req.params.commentId });
+        await post.save();
 
-        if (!updatedPost) {
-            return res.status(404).json({ message: 'Failed to delete comment' });
-        }
+        // Get updated post with populated comments
+        const updatedPost = await Post.findById(post._id)
+            .populate('comments.author', 'name batch branch')
+            .exec();
 
         res.status(200).json({ 
             message: 'Comment deleted successfully',
-            commentId: req.params.commentId
+            commentId: req.params.commentId,
+            comments: updatedPost.comments // Send back updated comments array
         });
 
     } catch (error) {
