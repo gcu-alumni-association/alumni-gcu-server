@@ -150,4 +150,110 @@ const editEvent = async (req, res) => {
   }
 };
 
-module.exports = { addEvents, getEvents, getSingleEvent, deleteEvent, editEvent };
+const deleteEventsImages = async (req, res) => {
+  try {
+    const eventsId = req.params.id;
+    const { imagesToDelete } = req.body; // Array of image filenames to delete
+
+    if (!imagesToDelete || !Array.isArray(imagesToDelete) || imagesToDelete.length === 0) {
+      return res.status(400).json({ message: "No images specified for deletion" });
+    }
+
+    const events = await Events.findById(eventsId);
+
+    if (!events) {
+      return res.status(404).json({ message: "Events item not found" });
+    }
+
+    const folderPath = path.join(__dirname, '..', 'uploads', 'events', events.imageFolder);
+
+    // Filter and delete the selected images
+    const remainingImages = [];
+    for (const image of events.images) {
+      const imageName = path.basename(image); // Extract filename from path
+      if (imagesToDelete.includes(imageName)) {
+        try {
+          const imagePath = path.join(folderPath, imageName);
+          await fs.unlink(imagePath); // Delete the file
+        } catch (error) {
+          console.error(`Error deleting image: ${imageName}, Error: ${error}`);
+        }
+      } else {
+        remainingImages.push(image); // Keep non-deleted images
+      }
+    }
+
+    // Update the events item with the remaining images
+    events.images = remainingImages;
+    await events.save();
+
+    res.status(200).json({
+      message: "Selected images deleted successfully",
+      remainingImages: events.images,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
+  }
+};
+
+//get images for a specific events item
+const getEventsImages = async (req, res) => {
+  try {
+    const eventsId = req.params.id;
+    const events = await Events.findById(eventsId).select('images');
+
+    if (!events) {
+      return res.status(404).json({ message: "Events item not found" });
+    }
+
+    if (!events.images || events.images.length === 0) {
+      return res.status(200).json({ images: [] });
+    }
+
+    // Return the images with their filenames
+    const images = events.images.map(imagePath => ({
+      filename: path.basename(imagePath),
+      fullPath: imagePath
+    }));
+
+    res.status(200).json({ images });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
+  }
+};
+
+//upload images to a specific events item
+const addEventsImages = async (req, res) => {
+  try {
+    const eventsId = req.params.id;
+    console.log('Adding images to events ID:', eventsId);
+    console.log('File locations:', req.filesLocations); //from uploadImage middleware
+
+    if (!req.filesLocations || req.filesLocations.length === 0) {
+      return res.status(400).json({ message: "No images provided for upload" });
+    }
+
+    const events = await Events.findById(eventsId);
+    if (!events) {
+      return res.status(404).json({ message: "Events item not found" });
+    }
+
+    //add the new image paths to the events item
+    //note: req.filesLocations already contains the correct paths
+    events.images = [...events.images, ...req.filesLocations];
+    
+    console.log('Updated events images array:', events.images);
+
+    await events.save();
+    
+    res.status(200).json({
+      message: "Images added successfully",
+      updatedImages: events.images,
+    });
+  } catch (error) {
+    console.error('Error in addEventsImages:', error);
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
+  }
+};
+
+module.exports = { addEvents, getEvents, getSingleEvent, deleteEvent, editEvent, deleteEventsImages, getEventsImages, addEventsImages};
