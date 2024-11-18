@@ -134,4 +134,113 @@ const deleteNews = async (req, res) => {
   }
 };
 
-module.exports = { getNews, uploadNews, getSingleNews, editNews, deleteNews };
+const deleteNewsImages = async (req, res) => {
+  try {
+    const newsId = req.params.id;
+    const { imagesToDelete } = req.body; // Array of image filenames to delete
+
+    if (!imagesToDelete || !Array.isArray(imagesToDelete) || imagesToDelete.length === 0) {
+      return res.status(400).json({ message: "No images specified for deletion" });
+    }
+
+    const news = await News.findById(newsId);
+
+    if (!news) {
+      return res.status(404).json({ message: "News item not found" });
+    }
+
+    const folderPath = path.join(__dirname, '..', 'uploads', 'news', news.imageFolder);
+
+    // Filter and delete the selected images
+    const remainingImages = [];
+    for (const image of news.images) {
+      const imageName = path.basename(image); // Extract filename from path
+      if (imagesToDelete.includes(imageName)) {
+        try {
+          const imagePath = path.join(folderPath, imageName);
+          await fs.unlink(imagePath); // Delete the file
+        } catch (error) {
+          console.error(`Error deleting image: ${imageName}, Error: ${error}`);
+        }
+      } else {
+        remainingImages.push(image); // Keep non-deleted images
+      }
+    }
+
+    // Update the news item with the remaining images
+    news.images = remainingImages;
+    await news.save();
+
+    res.status(200).json({
+      message: "Selected images deleted successfully",
+      remainingImages: news.images,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
+  }
+};
+
+//get images for a specific news item
+const getNewsImages = async (req, res) => {
+  try {
+    const newsId = req.params.id;
+    const news = await News.findById(newsId).select('images');
+
+    if (!news) {
+      return res.status(404).json({ message: "News item not found" });
+    }
+
+    // If no images exist, return an empty array
+    if (!news.images || news.images.length === 0) {
+      return res.status(200).json({ images: [] });
+    }
+
+    // Return the images with their filenames
+    const images = news.images.map(imagePath => ({
+      filename: path.basename(imagePath),
+      fullPath: imagePath
+    }));
+
+    res.status(200).json({ images });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
+  }
+};
+
+//upload images to a specific news item
+const addNewsImages = async (req, res) => {
+  try {
+    const newsId = req.params.id;
+    console.log('Adding images to news ID:', newsId);
+    console.log('File locations:', req.filesLocations); //from uploadImage middleware
+
+    // Validate uploaded files
+    if (!req.filesLocations || req.filesLocations.length === 0) {
+      return res.status(400).json({ message: "No images provided for upload" });
+    }
+
+    const news = await News.findById(newsId);
+    if (!news) {
+      return res.status(404).json({ message: "News item not found" });
+    }
+
+    //add the new image paths to the news item
+    //note: req.filesLocations already contains the correct paths
+    news.images = [...news.images, ...req.filesLocations];
+    
+    console.log('Updated news images array:', news.images);
+
+    await news.save();
+    
+    res.status(200).json({
+      message: "Images added successfully",
+      updatedImages: news.images,
+    });
+  } catch (error) {
+    console.error('Error in addNewsImages:', error);
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
+  }
+};
+
+module.exports = { getNews, uploadNews, getSingleNews, editNews, deleteNews, deleteNewsImages, getNewsImages, addNewsImages };
+

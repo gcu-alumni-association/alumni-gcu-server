@@ -7,7 +7,10 @@ const {
 	uploadNews,
 	getSingleNews,
 	editNews,
-	deleteNews
+	deleteNews,
+	deleteNewsImages,
+	getNewsImages,
+	addNewsImages
 } = require("../controllers/news-controller");
 const { uploadImage, upload } = require("../middleware/upload-images");
 
@@ -44,5 +47,11 @@ router.get(
 router.put("/edit/:id", verifyToken, checkAdmin, upload.array("images", 5), editNews);
 
 router.delete("/delete/:id", verifyToken, checkAdmin, deleteNews);
+
+router.delete("/delete-news-images/:id", verifyToken, checkAdmin, deleteNewsImages);
+
+router.get("/get-news-images/:id", verifyToken, checkAdmin, getNewsImages);
+
+router.post('/upload-news-images/:id', verifyToken, checkAdmin, upload.array('images'), uploadImage, addNewsImages);
 
 module.exports = router;
