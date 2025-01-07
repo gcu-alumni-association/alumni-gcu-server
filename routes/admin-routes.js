@@ -83,5 +83,17 @@ router.post("/send-emails", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
+router.get("/stats", verifyToken, checkAdmin, async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const pendingUsers = await User.countDocuments({ isVerified: false });
+    const approvedUsers = await User.countDocuments({ isVerified: true });
+
+    res.json({ totalUsers, pendingUsers, approvedUsers });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;
