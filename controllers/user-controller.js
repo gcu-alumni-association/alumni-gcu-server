@@ -387,6 +387,42 @@ const uploadProfilePhoto = async (req, res) => {
   }
 };
 
+
+const removeProfilePhoto = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if the user has a profile photo to delete
+    if (user.profilePhoto) {
+      const oldPhotoPath = path.join(__dirname, '..', user.profilePhoto);
+
+      try {
+        await fs.promises.unlink(oldPhotoPath); // Delete the old photo file
+        console.log(`Deleted old profile photo: ${oldPhotoPath}`);
+      } catch (error) {
+        console.error('Error deleting profile photo:', error);
+        return res.status(500).json({ message: 'Error deleting the profile photo' });
+      }
+
+      // Remove the photo path reference from the database
+      user.profilePhoto = null;
+      await user.save();
+
+      return res.json({ message: 'Profile photo deleted successfully' });
+    } else {
+      return res.status(400).json({ message: 'No profile photo to delete' });
+    }
+  } catch (error) {
+    console.error('Error removing profile photo:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+};
+
+
+
 // const getProfilePhoto = async (req, res) => {
 //   try {
 //     const user = await User.findById(req.user.id).select('profilePhoto');
@@ -433,5 +469,6 @@ module.exports = {
     upload, 
     uploadProfilePhoto,
     // getProfilePhoto,
-    getProfilePhotoById
+    getProfilePhotoById,
+    removeProfilePhoto
 }
