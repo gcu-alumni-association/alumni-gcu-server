@@ -79,6 +79,9 @@ app.use('/api/posts', postRoutes);
 const feedbackRoutes = require('./routes/feedback-routes');
 app.use('/api/feedback', feedbackRoutes)
 
+const visitorRoutes = require('./routes/visitors-routes');
+app.use('/api/visitors', visitorRoutes);
+
 //Error handling middleware
 app.use((err, req, res, next) => {
   console.log(err.stack);

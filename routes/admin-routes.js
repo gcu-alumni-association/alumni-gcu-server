@@ -1,7 +1,9 @@
 const express = require("express");
 const { check } = require("express-validator");
 const router = express.Router();
-const User = require('../model/User')
+const User = require('../model/User');
+const Post = require('../model/Post');
+const Feedback = require('../model/Feedback');
 const { verifyToken, checkAdmin } = require('../middleware/verify-token');
 const {
   approve,
@@ -83,17 +85,124 @@ router.post("/send-emails", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
-router.get("/stats", verifyToken, checkAdmin, async (req, res) => {
+// Total Metrics
+router.get('/metrics', verifyToken, checkAdmin, async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const pendingUsers = await User.countDocuments({ isVerified: false });
-    const approvedUsers = await User.countDocuments({ isVerified: true });
+      const totalUsers = await User.countDocuments({ isVerified: true });
+      const totalUnverifiedUsers = await User.countDocuments({ isVerified: false });
+      const totalPosts = await Post.countDocuments();
+      const totalComments = await Post.aggregate([
+          { $unwind: "$comments" },
+          { $count: "totalComments" }
+      ]);
+      const totalFeedback = await Feedback.countDocuments();
 
-    res.json({ totalUsers, pendingUsers, approvedUsers });
-  } catch (error) {
-    console.error('Server error:', error);
-    res.status(500).json({ error: 'Server error' });
+      res.json({
+          totalUsers,
+          totalUnverifiedUsers,
+          totalPosts,
+          totalComments: totalComments[0]?.totalComments || 0,
+          totalFeedback
+      });
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch metrics' });
   }
 });
+
+// Monthly User Registrations
+router.get('/users/registrations', verifyToken, checkAdmin, async (req, res) => {
+  try {
+      const registrations = await User.aggregate([
+          {
+              $group: {
+                  _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+                  count: { $sum: 1 }
+              }
+          },
+          {
+              $sort: { "_id.year": 1, "_id.month": 1 }
+          }
+      ]);
+
+      const formattedData = registrations.map(item => ({
+          month: item._id.year && item._id.month ? `${item._id.year}-${item._id.month}` : 'Unknown',
+          count: item.count
+      }));
+
+      res.json({ data: formattedData });
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch user registrations' });
+  }
+});
+
+// Posts by Category
+router.get('/posts/categories', verifyToken, checkAdmin, async (req, res) => {
+  try {
+      const categories = await Post.aggregate([
+          {
+              $group: {
+                  _id: "$category",
+                  count: { $sum: 1 }
+              }
+          }
+      ]);
+
+      const formattedData = categories.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+      }, {});
+
+      res.json({ categories: formattedData });
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch posts by category' });
+  }
+});
+
+// Top Active Users
+router.get('/users/active', verifyToken, checkAdmin, async (req, res) => {
+  try {
+      const activeUsers = await Post.aggregate([
+          {
+              $group: {
+                  _id: "$author",
+                  postCount: { $sum: 1 }
+              }
+          },
+          {
+              $sort: { postCount: -1 }
+          },
+          {
+              $limit: 10
+          },
+          {
+              $lookup: {
+                  from: "users",
+                  localField: "_id",
+                  foreignField: "_id",
+                  as: "user"
+              }
+          },
+          {
+              $unwind: "$user"
+          },
+          {
+              $project: {
+                  name: "$user.name",
+                  email: "$user.email",
+                  postCount: 1
+              }
+          }
+      ]);
+
+      res.json({ users: activeUsers });
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch top active users' });
+  }
+});
+
 
 module.exports = router;
