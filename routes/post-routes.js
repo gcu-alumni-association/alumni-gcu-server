@@ -352,4 +352,24 @@ router.delete('/:postId/comments/:commentId', verifyToken, async (req, res) => {
     }
 });
 
+router.get('/:id', verifyToken, async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const post = await Post.findById(postId)
+            .populate('author', 'name batch branch')
+            .populate('comments.author', 'name batch branch')
+            .exec();
+
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
+        res.status(200).json({ post });
+    } catch (error) {
+        console.error('Error fetching post:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+
 module.exports = router;
