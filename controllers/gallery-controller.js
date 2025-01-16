@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const { validationResult } = require("express-validator");
 const Gallery = require('../model/Gallery'); 
+const mongoose = require('mongoose'); 
 
 // Helper function to create gallery album folder
 async function createGalleryAlbumFolder(albumName) {
@@ -83,6 +84,10 @@ const getAlbumNames = async (req, res) => {
 
 const getSingleAlbum = async (req, res) => {
   try {
+    //validating id for correct error response
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+          return res.status(404).json({ message: "Invalid Album ID format" });
+    }
     const gallery = await Gallery.findById(req.params.id).select('albumName images date');
     if (!gallery) {
       return res.status(404).json({ message: "Album not found" });

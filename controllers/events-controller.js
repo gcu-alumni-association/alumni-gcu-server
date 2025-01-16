@@ -2,6 +2,7 @@ const Events = require('../model/Events');
 const { validationResult } = require('express-validator');
 const path = require('path');
 const fs = require('fs').promises;
+const mongoose = require('mongoose'); 
 
 async function createEventFolder(eventTitle) {
   const folderName = eventTitle.toLowerCase().replace(/\s+/g, '-');
@@ -77,6 +78,10 @@ const getEvents = async (req, res) => {
 // To get a single event by ID
 const getSingleEvent = async (req, res) => {
   try {
+    //validating id for correct error response
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: "Invalid event ID format" });
+    }
     const event = await Events.findById(req.params.id).select('title content organizer event_date event_time images posted_date');
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
