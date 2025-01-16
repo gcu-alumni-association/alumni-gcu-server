@@ -2,6 +2,7 @@ const News = require('../model/News');
 const { validationResult } = require("express-validator");
 const path = require('path');
 const fs = require('fs').promises;
+const mongoose = require('mongoose'); 
 
 // Helper function to create news folder
 async function createNewsFolder(newsTitle) {
@@ -45,6 +46,11 @@ const getNews = async (req, res) => {
 // Get a single news item
 const getSingleNews = async (req, res) => {
   try {
+    //validating id for correct error response
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: "Invalid news ID format" });
+    }
+
     const news = await News.findById(req.params.id).select('title content images date');
     if (!news) {
       return res.status(404).json({ message: "News item not found" });
