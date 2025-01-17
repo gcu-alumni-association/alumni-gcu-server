@@ -12,11 +12,21 @@ const {
   approvedUsers,
   bulkAddAlumni,
   sendEmail,
+  createAdmin,
+  getAdmins,
 } = require("../controllers/admin-controller");
 
 // File upload middleware
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' }); // Temp directory for CSV uploads
+
+router.post("/create-admin", [
+  check("name").isString().notEmpty(),
+  check("email").isEmail(),
+  check("password").isLength({ min: 8 }),
+], verifyToken, checkAdmin, createAdmin);
+
+router.get("/get-admins", verifyToken, checkAdmin, getAdmins);
 
 router.post("/approve", [
   check("email").isEmail()
