@@ -7,25 +7,75 @@ const multer = require('multer');
 const fs = require('fs');
 const AlumniRecord = require('../model/AlumniRecord');
 
+const createAdmin = async (req, res) => {
+  try {
+    // Ensure the user making the request is an admin
+    const requestingUser = req.user; // Assume this is populated by an authentication middleware
+    if (!requestingUser || requestingUser.role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized: Only admins can create new admin accounts.' });
+    }
 
-// const register = async (req, res) => {
-//   const errors = validationResult(req);
-//   if (!errors.isEmpty()) {
-//     return res.status(400).json({ errors: errors.array() });
-//   }
+    const { name, email, password } = req.body;
 
-//     const { name, email, phone, batch, branch } = req.body;
-//     try {
-//       const user = new User({ name, email, phone, batch, branch });
-//       await user.save();  
-//       console.log('New user registration pending approval:', user); 
-//       res.status(201).json({ message: 'Registration successful, pending admin approval.' });
-//     } catch (error) {
-//       res.status(500).json({ error: 'Server error' });
-//     }
-//   };
+    // Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required.' });
+    }
 
-  
+    // Check if the email already exists in the database
+    const existingAdmin = await User.findOne({ email });
+    if (existingAdmin) {
+      return res.status(400).json({ error: 'An account with this email already exists.' });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create the admin user
+    const newAdmin = new User({
+      name,
+      email,
+      password: hashedPassword,
+      role: 'admin', // Explicitly set the role to admin
+      isVerified: true, // Admin accounts are automatically verified
+    });
+
+    await newAdmin.save();
+
+    // Respond to the client
+    res.status(201).json({ message: 'Admin account created successfully.', admin: newAdmin });
+  } catch (error) {
+    console.error('Error creating admin account:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+const getAdmins = async (req, res) => {
+  const { search } = req.query; // Get search term from query parameters
+
+  try {
+    const query = { role: 'admin' }; // Filter only admin accounts
+
+    if (search) {
+      const searchRegex = new RegExp(search, 'i'); // Case-insensitive regex for string fields
+
+      // Add conditions for name and branch (strings)
+      query.$or = [
+        { name: { $regex: searchRegex } },
+        { branch: { $regex: searchRegex } },
+      ];
+    }
+
+    // Fetch admins and select required fields
+    const admins = await User.find(query).select('name email role');
+    res.json(admins);
+  } catch (error) {
+    console.error('Error fetching admin accounts:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
 const pendingUsers = async (req, res) => {
       try {
       const users = await User.find({ isVerified: false });
@@ -208,10 +258,12 @@ const bulkAddAlumni = async (req, res) => {
 
 
 module.exports = {
+    createAdmin,  
     approve,
     pendingUsers,
     rejectUser,
     sendEmail, 
     approvedUsers,
-    bulkAddAlumni
+    bulkAddAlumni,
+    getAdmins,
 }

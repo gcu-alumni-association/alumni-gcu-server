@@ -8,7 +8,7 @@ const verifyToken = (req, res, next) => {
 
   // Check if token is present
   if (!token) {
-    return res.status(401).json({ message: 'Access Denied' });
+    return res.status(401).json({ message: 'Access Denied: No token provided.' });
   }
 
   try {
