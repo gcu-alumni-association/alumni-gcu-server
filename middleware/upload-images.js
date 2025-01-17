@@ -24,6 +24,13 @@ const uploadImage = async (req, res, next) => {
   console.log('Request body:', req.body);
   console.log('Files:', req.files);
 
+  if ((!req.files || req.files.length === 0) && ['news', 'events'].includes(req.body.category)) {
+    console.log(`No files uploaded for ${req.body.category}`);
+    req.filesLocations = []; 
+    next();
+    return;
+  }
+  // For other categories or if files exist, keep existing validation
   if (!req.files || req.files.length === 0) {
     console.log('No files uploaded');
     return res.status(400).send({ message: "No files uploaded" });
