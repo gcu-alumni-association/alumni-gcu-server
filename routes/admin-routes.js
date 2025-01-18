@@ -214,5 +214,17 @@ router.get('/users/active', verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
+// Flagged Posts
+router.get('/flagged-posts', verifyToken, checkAdmin, async (req, res) => {
+  try {
+      const flaggedPosts = await Post.find({ flagged: true })
+          .populate('author', 'name batch branch');
+      res.status(200).json(flaggedPosts);
+  } catch (err) {
+      console.error('Error fetching flagged posts:', err);
+      res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 module.exports = router;

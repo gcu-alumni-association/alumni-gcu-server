@@ -42,8 +42,8 @@ const PostSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['post', 'job', 'education'], 
-        default: 'post',                    
+        enum: ['post', 'job', 'education'],
+        default: 'post',
         required: true
     },
     likes: [
@@ -52,8 +52,13 @@ const PostSchema = new mongoose.Schema({
             ref: 'User'
         }
     ],
-    // Add the comments array field
-    comments: [CommentSchema]
+    comments: [CommentSchema], // Existing comments array field
+
+    // New field for flagged posts
+    flagged: {
+        type: Boolean,
+        default: false // Default is unflagged
+    }
 });
 
 module.exports = mongoose.model('Post', PostSchema);
