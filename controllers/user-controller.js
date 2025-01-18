@@ -6,37 +6,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const AlumniRecord = require('../model/AlumniRecord');
+const sharp = require('sharp');
 
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/profilephotos/')
-  },
-  filename: function (req, file, cb) {
-    const userId = req.user.id;
-    const timestamp = Date.now();
-    const originalname = path.basename(file.originalname);
-    
-    cb(null, `${userId}-${timestamp}-${originalname}`);
-}
-});
-
-const fileFilter = (req, file, cb) => {
-  const filetypes = /jpeg|jpg|png/;
-  const mimetype = filetypes.test(file.mimetype);
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    return cb(null, false); 
-  }
-};
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter
-});
 
 
 const register = async (req, res) => {
@@ -342,6 +314,25 @@ const checkEmail = async (req, res) => {
 };
 
 
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+  const filetypes = /jpeg|jpg|png/;
+  const mimetype = filetypes.test(file.mimetype);
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    return cb(null, false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter
+});
+
 const uploadProfilePhoto = async (req, res) => {
   try {
     // Check if a file was provided
@@ -359,22 +350,43 @@ const uploadProfilePhoto = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if there is an existing profile photo and it's not null or undefined
+    // Generate filename
+    const userId = req.user.id;
+    const timestamp = Date.now();
+    const originalname = path.basename(req.file.originalname);
+    const filename = `${userId}-${timestamp}-${originalname}`;
+    const uploadPath = path.join('uploads/profilephotos/', filename);
+    const fullUploadPath = path.join(__dirname, '..', uploadPath);
+
+    // Delete old profile photo if exists in MongoDB
     if (user.profilePhoto && user.profilePhoto !== null) {
       const oldPhotoPath = path.join(__dirname, '..', user.profilePhoto);
-      console.log('Old profile photo path:', oldPhotoPath); // Log the old photo path for debugging
-
-      // Try to delete the old profile photo
+      console.log('Old profile photo path:', oldPhotoPath); // Log for debugging
+      
       try {
-        await fs.promises.unlink(oldPhotoPath); // Delete the old photo
+        await fs.promises.unlink(oldPhotoPath); // Using fs.promises.unlink instead of fs.unlink
         console.log(`Deleted old profile photo: ${oldPhotoPath}`);
       } catch (error) {
         console.error('Error deleting old profile photo:', error);
+        // Continue with the upload even if delete fails
       }
     }
 
-    // Save the new profile photo path in the user's record
-    user.profilePhoto = req.file.path;
+    // Process the image using Sharp
+    await sharp(req.file.buffer)
+      .resize(350, 350, {  
+        fit: 'cover',
+        withoutEnlargement: true
+      })
+      .jpeg({ 
+        quality: 50,  
+        chromaSubsampling: '4:4:4',  
+        force: true  
+      })
+      .toFile(fullUploadPath);
+
+    // Update user's profile photo path
+    user.profilePhoto = uploadPath;
     await user.save();
 
     res.json({ message: 'Profile photo uploaded successfully', photoPath: user.profilePhoto });
