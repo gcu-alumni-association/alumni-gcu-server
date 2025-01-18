@@ -52,8 +52,13 @@ router.get('/get-post', verifyToken, async (req, res) => {
         // Get category from query parameter (optional)
         const category = req.query.category || 'post';  // Default to 'post'
         
+        const excludeUser = req.query.excludeUser;
+        
         // Create filter object
-        const filter = { category };  // Filter by category
+        const filter = { category };
+        if (excludeUser) {
+            filter.author = { $ne: excludeUser };
+        }
         
         // Count total posts based on the filter
         const totalPosts = await Post.countDocuments(filter);
@@ -77,7 +82,7 @@ router.get('/get-post', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Error fetching posts:', error);
         res.status(500).json({ message: "Internal server error" });
-    }
+    }
 });
 
 
