@@ -371,5 +371,19 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
 });
 
+// Report a post
+router.post('/report', verifyToken, async (req, res) => {
+    try {
+        const { postId } = req.body;
+        const post = await Post.findByIdAndUpdate(postId, { flagged: true }, { new: true });
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+        res.status(200).json({ message: "Post flagged successfully" });
+    } catch (err) {
+        console.error('Error reporting post:', err);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 module.exports = router;
