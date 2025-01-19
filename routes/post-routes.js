@@ -3,38 +3,57 @@ const router = express.Router();
 const Post = require('../model/Post');
 const { verifyToken, checkAdmin } = require('../middleware/verify-token');
 
-// Create a new post
+const userCooldowns = new Map(); // Temporary in-memory storage for user cooldowns
+const COOLDOWN_DURATION = 80 * 1000; // 80 seconds in milliseconds
+
+// Create a new post with cooldown check
 router.post('/create', verifyToken, async (req, res) => {
     try {
-        const { content, category } = req.body;  // Get category from request body
-        
+        const { content, category } = req.body;
+
         if (!content || content.trim().length === 0) {
             return res.status(400).json({ message: "Post content cannot be empty" });
         }
-        
+
         if (!category || !['post', 'job', 'education'].includes(category)) {
             return res.status(400).json({ message: "Invalid category" });
         }
-        
+
         const userId = req.user.id;
+
+        // Check cooldown
+        const now = Date.now();
+        const lastPostTime = userCooldowns.get(userId);
+        if (lastPostTime && now - lastPostTime < COOLDOWN_DURATION) {
+            let remainingTime = Math.ceil((COOLDOWN_DURATION - (now - lastPostTime)) / 1000);
+            remainingTime = Math.max(remainingTime, 1); // Ensure at least 1 second is returned
         
+            return res.status(429).json({
+                message: `Please wait ${remainingTime} seconds before posting again.`,
+                remainingTime,
+            });
+        }
+
+        // Create and save the post
         const newPost = new Post({
             content,
             author: userId,
-            category,  // Save category in the post
+            category,
             createdAt: new Date(),
-            likes: []
+            likes: [],
         });
-        
+
         await newPost.save();
-        
-        // Populate author information before sending response
-        const populatedPost = await Post.findById(newPost._id)
-            .populate('author', 'name batch branch');
-        
+
+        // Update cooldown
+        userCooldowns.set(userId, now);
+
+        // Populate author information
+        const populatedPost = await Post.findById(newPost._id).populate('author', 'name batch branch');
+
         res.status(201).json({
             message: "Post created successfully",
-            post: populatedPost
+            post: populatedPost,
         });
     } catch (error) {
         console.error('Error creating post:', error);
