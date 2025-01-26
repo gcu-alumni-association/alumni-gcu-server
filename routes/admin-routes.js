@@ -4,7 +4,7 @@ const router = express.Router();
 const User = require('../model/User');
 const Post = require('../model/Post');
 const Feedback = require('../model/Feedback');
-const { verifyToken, checkAdmin } = require('../middleware/verify-token');
+const { verifyToken, checkAdmin, checkSuperUser } = require('../middleware/verify-token');
 const {
   approve,
   pendingUsers,
@@ -24,9 +24,9 @@ router.post("/create-admin", [
   check("name").isString().notEmpty(),
   check("email").isEmail(),
   check("password").isLength({ min: 8 }),
-], verifyToken, checkAdmin, createAdmin);
+], verifyToken, checkSuperUser, createAdmin);
 
-router.get("/get-admins", verifyToken, checkAdmin, getAdmins);
+router.get("/get-admins", verifyToken, checkSuperUser, getAdmins);
 
 router.post("/approve", [
   check("email").isEmail()

@@ -15,7 +15,9 @@ const userSchema = new Schema({
   },
   phone: { 
     type: String, 
-    required: function() { return this.role !== 'admin'; }, // Required only for non-admins
+    required: function() { 
+      return this.role === 'user'; // Only required for regular users
+    }, 
     match: [/^\d{10}$/, 'Please enter a valid 10-digit phone number']
   },
   password: { 
@@ -25,7 +27,9 @@ const userSchema = new Schema({
   },
   roll_no: {
     type: Number,
-    required: function() { return this.role !== 'admin'; }, // Required only for non-admins
+    required: function() { 
+      return this.role === 'user'; // Only required for regular users
+    },
     validate: {
       validator: Number.isInteger,
       message: '{VALUE} is not an integer value'
@@ -33,7 +37,9 @@ const userSchema = new Schema({
   },
   batch: {
     type: Number,
-    required: function() { return this.role !== 'admin'; }, // Required only for non-admins
+    required: function() { 
+      return this.role === 'user'; // Only required for regular users
+    },
     validate: {
       validator: function(value) {
         const currentYear = new Date().getFullYear();
@@ -44,7 +50,9 @@ const userSchema = new Schema({
   },
   branch: {
     type: String,
-    required: function() { return this.role !== 'admin'; } // Required only for non-admins
+    required: function() { 
+      return this.role === 'user'; // Only required for regular users
+    }
   },
   isVerified: { 
     type: Boolean, 
@@ -52,7 +60,7 @@ const userSchema = new Schema({
   },
   role: {
     type: String, 
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'superuser'],
     default: 'user'   
   },
   biography: {
