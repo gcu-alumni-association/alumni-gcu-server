@@ -9,10 +9,10 @@ const AlumniRecord = require('../model/AlumniRecord');
 
 const createAdmin = async (req, res) => {
   try {
-    // Ensure the user making the request is an admin
+    // Ensure the user making the request is a superuser
     const requestingUser = req.user; // Assume this is populated by an authentication middleware
-    if (!requestingUser || requestingUser.role !== 'admin') {
-      return res.status(403).json({ error: 'Unauthorized: Only admins can create new admin accounts.' });
+    if (!requestingUser || requestingUser.role !== 'superuser') {
+      return res.status(403).json({ error: 'Unauthorized: Only superuser can create new admin accounts.' });
     }
 
     const { name, email, password } = req.body;
