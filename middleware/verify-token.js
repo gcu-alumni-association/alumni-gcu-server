@@ -23,10 +23,17 @@ const verifyToken = (req, res, next) => {
 
 
 const checkAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({message: 'Access denied, Admin only'})
-    }
-    next();
+  if (req.user.role === 'admin' || req.user.role === 'superuser') {
+    return next();
+  }
+  return res.status(403).json({message: 'Access denied, Admin or Superuser only'});
 }
 
-module.exports = { verifyToken, checkAdmin};
+const checkSuperUser = (req, res, next) => {
+  if (req.user.role !== 'superuser') {
+      return res.status(403).json({message: 'Access denied, Superuser only'})
+  }
+  next();
+}
+
+module.exports = { verifyToken, checkAdmin, checkSuperUser};
