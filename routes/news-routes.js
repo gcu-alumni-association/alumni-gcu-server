@@ -23,7 +23,7 @@ router.post(
 	"/upload",
 	verifyToken,
 	checkAdmin,
-	upload.array("images",5),
+	upload.array("images",10),
 	[
 		body("title").trim().notEmpty().withMessage("Title cannot be empty"),
 		body("content").trim().notEmpty().withMessage("Content cannot be empty"),

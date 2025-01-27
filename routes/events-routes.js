@@ -9,7 +9,7 @@ router.post(
   "/upload",
   verifyToken,
   checkAdmin,
-  upload.array("images", 5),
+  upload.array("images", 10),
   uploadImage,
   [
     check("title").not().isEmpty(),
