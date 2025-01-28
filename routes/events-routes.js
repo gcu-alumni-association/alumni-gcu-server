@@ -27,7 +27,7 @@ router.get("/get-event/:id", getSingleEvent);
 router.delete("/delete/:id", verifyToken, checkAdmin, deleteEvent);
 
 // New route to edit an event
-router.put("/edit/:id", verifyToken, checkAdmin, upload.array("images", 5), editEvent);
+router.put("/edit/:id", verifyToken, checkAdmin, editEvent);
 
 router.delete("/delete-events-images/:id", verifyToken, checkAdmin, deleteEventsImages);
 

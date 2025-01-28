@@ -94,7 +94,6 @@ const uploadNews = async (req, res) => {
 const editNews = async (req, res) => {
   const newsId = req.params.id;
   const { title, content, date } = req.body;
-  const newImages = req.files ? req.files.map(file => file.path) : [];
 
   try {
     const news = await News.findById(newsId);
@@ -107,10 +106,6 @@ const editNews = async (req, res) => {
     news.content = content || news.content;
     news.date = date || news.date;
 
-    // Update images if new ones are uploaded
-    if (newImages.length > 0) {
-      news.images = newImages;
-    }
 
     await news.save();
     res.status(200).json({ message: "News updated successfully", news });
