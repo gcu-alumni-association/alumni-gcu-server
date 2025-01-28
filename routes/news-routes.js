@@ -44,7 +44,7 @@ router.get(
 	getSingleNews
 );
 
-router.put("/edit/:id", verifyToken, checkAdmin, upload.array("images", 5), editNews);
+router.put("/edit/:id", verifyToken, checkAdmin, editNews);
 
 router.delete("/delete/:id", verifyToken, checkAdmin, deleteNews);
 
