@@ -5,7 +5,14 @@ const userSchema = new Schema({
   name: { 
     type: String, 
     required: [true, 'Name is required'],
-    minlength: [2, 'Name must be at least 2 characters long']
+    minlength: [2, 'Name must be at least 2 characters long'],
+    maxlength: [30, 'Name cannot exceed 30 characters'],
+    validate: {
+      validator: function(v) {
+        return /^[a-zA-Z0-9_\s]*$/.test(v);
+      },
+      message: props => 'Name can only contain letters, numbers, underscores, and spaces'
+    }
   },
   email: { 
     type: String, 
