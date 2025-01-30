@@ -9,9 +9,9 @@ const userSchema = new Schema({
     maxlength: [30, 'Name cannot exceed 30 characters'],
     validate: {
       validator: function(v) {
-        return /^[a-zA-Z0-9_\s]*$/.test(v);
+        return /^[a-zA-Z\s]*$/.test(v);
       },
-      message: props => 'Name can only contain letters, numbers, underscores, and spaces'
+      message: props => 'Name can only contain letters and spaces'
     }
   },
   email: { 
