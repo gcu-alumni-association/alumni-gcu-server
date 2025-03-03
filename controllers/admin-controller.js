@@ -161,11 +161,11 @@ const rejectUser = async (req, res) => {
 const sendEmail = async (users, emailContent, subject) => {
   try {
     const transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
+      host: 'smtp.gmail.com',
+      port: 465,
       auth: {
-        user: 'mayra.rau74@ethereal.email',
-        pass: 'CssjERRDPCrwvKxt23'
+        user: process.env.EMAIL_ADD,
+        pass: process.env.EMAIL_PASS
       }
     });
 
@@ -175,7 +175,7 @@ const sendEmail = async (users, emailContent, subject) => {
     // Loop through users and send email to each one
     for (let user of recipients) {
       const mailOptions = {
-        from: 'mayra.rau74@ethereal.email',
+        from: process.env.EMAIL_ADD,  // Sender address
         to: user.email,  // Send to the current user's email
         subject: subject || 'Notification',  // Subject provided or default
         text: emailContent || `Your account has been updated.`,  // Default message or provided email content
