@@ -66,16 +66,16 @@ const register = async (req, res) => {
 
     // Send registration confirmation email
     const transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
+      host: 'smtp.gmail.com',
+      port: 465,
       auth: {
-        user: 'mayra.rau74@ethereal.email',
-        pass: 'CssjERRDPCrwvKxt23'
+        user: process.env.EMAIL_ADD,
+        pass: process.env.EMAIL_PASS
       }
     });
 
     const mailOptions = {
-      from: 'mayra.rau74@ethereal.email',
+      from: 'process.env.EMAIL_ADD',
       to: user.email,
       subject: 'Registration Confirmation',
       text: user.isVerified ?
@@ -267,16 +267,16 @@ const forgotPassword = async (req, res) => {
     );
 
     const transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
+      host: 'smtp.gmail.com',
+      port: 465,
       auth: {
-        user: 'mayra.rau74@ethereal.email',
-        pass: 'CssjERRDPCrwvKxt23'
+        user: process.env.EMAIL_ADD,
+        pass: process.env.EMAIL_PASS
       }
     });
 
     const mailOptions = {
-      from: 'mayra.rau74@ethereal.email',
+      from: process.env.EMAIL_ADD,
       to: user.email,
       subject: 'Password Reset',
       text: `Your new temporary password is: ${dummyPassword}`
