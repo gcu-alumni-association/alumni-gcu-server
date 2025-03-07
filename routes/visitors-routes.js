@@ -20,12 +20,16 @@ router.post("/", async (req, res) => {
 // Fetch visitor count
 router.get("/", async (req, res) => {
   try {
-    const visitor = await Visitor.findOne({});
-    res.status(200).json({ totalVisitors: visitor ? visitor.count : 0 });
+    let visitor = await Visitor.findOne({});
+    if (!visitor) {
+      visitor = await Visitor.create({ count: 0 }); // Ensure document exists
+    }
+    res.status(200).json({ totalVisitors: visitor.count });
   } catch (error) {
     console.error("Error fetching visitor count:", error);
     res.status(500).json({ error: "Failed to fetch visitor count" });
   }
 });
+
 
 module.exports = router;
