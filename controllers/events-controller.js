@@ -96,12 +96,7 @@ const getSingleEvent = async (req, res) => {
 const deleteEvent = async (req, res) => {
   try {
     const eventId = req.params.id;
-    const isAdmin = req.user.role === 'admin'; // Check only admin role
-
-    // Ensure the user is an admin
-    if (!isAdmin) {
-      return res.status(403).json({ message: 'You are not authorized to delete this event' });
-    }
+    
 
     // Find the event by ID
     const event = await Events.findById(eventId);
