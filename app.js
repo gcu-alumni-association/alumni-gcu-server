@@ -82,6 +82,11 @@ app.use('/api/feedback', feedbackRoutes)
 const visitorRoutes = require('./routes/visitors-routes');
 app.use('/api/visitors', visitorRoutes);
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: 'API is working!' });
+});
+
 //Error handling middleware
 app.use((err, req, res, next) => {
   console.log(err.stack);
