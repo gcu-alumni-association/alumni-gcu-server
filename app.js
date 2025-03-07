@@ -16,7 +16,7 @@ const app = express();
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: process.env.CLIENT_URI || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());
