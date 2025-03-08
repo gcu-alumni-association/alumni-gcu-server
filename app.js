@@ -25,7 +25,24 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(morgan('combined')); //Used for Logging
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', (req, res, next) => {
+  // Check if the request is for a JPG file
+  if (req.path.toUpperCase().endsWith('.JPG')) {
+    const filePath = path.join(__dirname, 'uploads', req.path);
+    
+    // Check if file exists
+    const fs = require('fs');
+    if (fs.existsSync(filePath)) {
+      // Set the correct content type explicitly
+      res.setHeader('Content-Type', 'image/jpeg');
+      // Send the file
+      return res.sendFile(filePath);
+    }
+  }
+  
+  // For other files use static middleware
+  express.static(path.join(__dirname, 'uploads'))(req, res, next);
+});
 
 //Rate Limiting
 const limiter = rateLimit({
