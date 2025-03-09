@@ -141,7 +141,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     try {
         const postId = req.params.id;
         const userId = req.user.id;
-        const isAdmin = req.user.role === 'admin';
+        const isAdmin = req.user.role === 'admin' || req.user.role === 'superuser';
 
         const post = await Post.findById(postId);
 
