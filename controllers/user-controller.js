@@ -354,7 +354,8 @@ const uploadProfilePhoto = async (req, res) => {
     const userId = req.user.id;
     const timestamp = Date.now();
     const originalname = path.basename(req.file.originalname);
-    const filename = `${userId}-${timestamp}-${originalname}`;
+    const sanitizedName = originalname.replace(/\s+/g, '_'); // Replace spaces with underscores
+    const filename = `${userId}-${timestamp}-${sanitizedName}`;
     const uploadPath = path.join('uploads/profilephotos/', filename);
     const fullUploadPath = path.join(__dirname, '..', uploadPath);
 
