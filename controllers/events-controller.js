@@ -72,6 +72,15 @@ const addEvents = async (req, res) => {
   }
 
   try {
+    // Check if event with the same title already exists (case-insensitive)
+    const existingEvent = await Events.findOne({ 
+      title: { $regex: new RegExp(`^${req.body.title}$`, 'i') } 
+    });
+    
+    if (existingEvent) {
+      return res.status(400).json({ message: "An event with this title already exists" });
+    }
+
     const eventFolderPath = await createEventFolder(req.body.title);
     console.log('Created event folder:', eventFolderPath);
     

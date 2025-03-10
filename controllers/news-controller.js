@@ -103,6 +103,15 @@ const uploadNews = async (req, res) => {
   }
 
   try {
+    // Check if news with the same title already exists (case-insensitive)
+    const existingNews = await News.findOne({ 
+      title: { $regex: new RegExp(`^${req.body.title}$`, 'i') } 
+    });
+    
+    if (existingNews) {
+      return res.status(400).json({ message: "A news item with this title already exists" });
+    }
+
     const newsFolderPath = await createNewsFolder(req.body.title);
 
     const news = new News({
