@@ -96,9 +96,17 @@ app.use('/api/feedback', feedbackRoutes)
 const visitorRoutes = require('./routes/visitors-routes');
 app.use('/api/visitors', visitorRoutes);
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy',
+    time: new Date().toISOString()
+  });
+});
+
 // Root route
 app.get('/', (req, res) => {
-  res.json({ message: 'API is working!' });
+  res.status(404).json({ message: 'Not found' });
 });
 
 //Error handling middleware
@@ -109,6 +117,6 @@ app.use((err, req, res, next) => {
 
 //Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`Server is running on port ${PORT} (localhost only)`);
 });
