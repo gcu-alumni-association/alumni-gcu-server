@@ -14,13 +14,13 @@ const app = express();
 
 // Middleware setup
 app.use(cookieParser());
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: '50mb'}));
 app.use(cors({
   origin: process.env.CLIENT_URI || 'http://localhost:3000',
   credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
@@ -28,7 +28,7 @@ app.use(morgan('combined')); //Used for Logging
 app.use('/uploads', (req, res, next) => {
   // Get full path
   const filePath = path.join(__dirname, 'uploads', req.path);
-  
+
   // Check if file exists
   const fs = require('fs');
   if (fs.existsSync(filePath)) {
@@ -44,7 +44,7 @@ app.use('/uploads', (req, res, next) => {
 //Rate Limiting
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 1000, // Limit each IP to 100 requests per `window` 
+  max: 1000, // Limit each IP to 100 requests per `window`
 });
 app.use(limiter); // Apply the rate limiting middleware to all requests
 
@@ -98,7 +98,7 @@ app.use('/api/visitors', visitorRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
+  res.status(200).json({
     status: 'healthy',
     time: new Date().toISOString()
   });
