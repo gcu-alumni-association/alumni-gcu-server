@@ -26,6 +26,40 @@ async function deleteEventFolder(folderName) {
   }
 }
 
+// Helper function to rename events folder
+async function renameEventFolder(oldFolderName, newTitle) {
+  if (!oldFolderName || !newTitle) return oldFolderName;
+  
+  try {
+    const oldPath = path.join(__dirname, '..', 'uploads', 'events', oldFolderName);
+    const newFolderName = newTitle.toLowerCase().replace(/\s+/g, '-');
+    const newPath = path.join(__dirname, '..', 'uploads', 'events', newFolderName);
+    
+    // Check if old path exists
+    await fs.access(oldPath);
+    
+    // Check if new path already exists and it's not the same as old path
+    try {
+      await fs.access(newPath);
+      if (oldPath !== newPath) {
+        console.log(`Destination folder already exists: ${newPath}`);
+        return oldFolderName; // Return old folder name if new path already exists
+      }
+    } catch (error) {
+      // New path doesn't exist, which is good
+    }
+    
+    // Rename the folder
+    await fs.rename(oldPath, newPath);
+    console.log(`Successfully renamed folder from ${oldPath} to ${newPath}`);
+    
+    return newFolderName;
+  } catch (error) {
+    console.error(`Error renaming folder: ${error}`);
+    return oldFolderName; // Return old folder name if renaming fails
+  }
+}
+
 // To create events (admin only)
 const addEvents = async (req, res) => {
   console.log('Received request body:', req.body);
@@ -127,6 +161,28 @@ const editEvent = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
+    // Check if title has changed and update folder if needed
+    let updatedImageFolder = event.imageFolder;
+    let updatedImagePaths = [...event.images];
+    
+    if (title && title !== event.title && event.imageFolder) {
+      // Rename the folder
+      const newFolderName = await renameEventFolder(event.imageFolder, title);
+      
+      if (newFolderName !== event.imageFolder) {
+        updatedImageFolder = newFolderName;
+        
+        // Update image paths with new folder name
+        updatedImagePaths = event.images.map(imagePath => {
+          // Replace old folder name with new folder name in the path
+          return imagePath.replace(
+            `/uploads/events/${event.imageFolder}/`, 
+            `/uploads/events/${newFolderName}/`
+          );
+        });
+      }
+    }
+
     // Update fields if they are provided in the request
     event.title = title || event.title;
     event.content = content || event.content;
@@ -134,6 +190,8 @@ const editEvent = async (req, res) => {
     event.event_date = event_date || event.event_date;
     event.event_time = event_time || event.event_time;
     event.posted_date = posted_date || event.posted_date;
+    event.imageFolder = updatedImageFolder;
+    event.images = updatedImagePaths;
 
     await event.save();
     res.status(200).json({ message: 'Event updated successfully', event });

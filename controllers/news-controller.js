@@ -26,6 +26,40 @@ async function deleteNewsFolder(folderName) {
   }
 }
 
+// Helper function to rename news folder
+async function renameNewsFolder(oldFolderName, newTitle) {
+  if (!oldFolderName || !newTitle) return oldFolderName;
+  
+  try {
+    const oldPath = path.join(__dirname, '..', 'uploads', 'news', oldFolderName);
+    const newFolderName = newTitle.toLowerCase().replace(/\s+/g, '-');
+    const newPath = path.join(__dirname, '..', 'uploads', 'news', newFolderName);
+    
+    // Check if old path exists
+    await fs.access(oldPath);
+    
+    // Check if new path already exists and it's not the same as old path
+    try {
+      await fs.access(newPath);
+      if (oldPath !== newPath) {
+        console.log(`Destination folder already exists: ${newPath}`);
+        return oldFolderName; // Return old folder name if new path already exists
+      }
+    } catch (error) {
+      // New path doesn't exist, which is good
+    }
+    
+    // Rename the folder
+    await fs.rename(oldPath, newPath);
+    console.log(`Successfully renamed folder from ${oldPath} to ${newPath}`);
+    
+    return newFolderName;
+  } catch (error) {
+    console.error(`Error renaming folder: ${error}`);
+    return oldFolderName; // Return old folder name if renaming fails
+  }
+}
+
 // Get all news
 const getNews = async (req, res) => {
   try {
@@ -101,11 +135,35 @@ const editNews = async (req, res) => {
       return res.status(404).json({ message: "News item not found" });
     }
 
+    // Check if title has changed and update folder if needed
+    let updatedImageFolder = news.imageFolder;
+    let updatedImagePaths = [...news.images];
+    
+    if (title && title !== news.title && news.imageFolder) {
+      // Rename the folder
+      const newFolderName = await renameNewsFolder(news.imageFolder, title);
+      
+      if (newFolderName !== news.imageFolder) {
+        updatedImageFolder = newFolderName;
+        
+        // Update image paths with new folder name
+        updatedImagePaths = news.images.map(imagePath => {
+          // Replace old folder name with new folder name in the path
+          return imagePath.replace(
+            `/uploads/news/${news.imageFolder}/`, 
+            `/uploads/news/${newFolderName}/`
+          );
+        });
+      }
+    }
+
     // Update fields if provided
     news.title = title || news.title;
     news.content = content || news.content;
     news.date = date || news.date;
 
+    news.imageFolder = updatedImageFolder;
+    news.images = updatedImagePaths;
 
     await news.save();
     res.status(200).json({ message: "News updated successfully", news });
