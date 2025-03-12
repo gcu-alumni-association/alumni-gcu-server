@@ -22,7 +22,7 @@ const login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
     
-        const accessToken = generateToken(user, process.env.JWT_SECRET, '30m');
+        const accessToken = generateToken(user, process.env.JWT_SECRET, '15m');
         const refreshToken = generateToken(user, process.env.JWT_REFRESH_SECRET, '90d');
   
         res.cookie('GCURFRSTKN', refreshToken , {
@@ -61,7 +61,7 @@ const refresh_token = async (req, res) => {
     try {
       const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
       const user = await User.findById(decoded.id).select("-password");
-      const accessToken = generateToken(user, process.env.JWT_SECRET, '30m'); // Adjust the duration as needed
+      const accessToken = generateToken(user, process.env.JWT_SECRET, '15m'); // Adjust the duration as needed
 
       const userInfo = { id: user._id, name: user.name, email: user.email, role: user.role, isVerified: user.isVerified, biography: user.biography, currentWorkingPlace: user.currentWorkingPlace, socialLinks: user.socialLinks };
   
